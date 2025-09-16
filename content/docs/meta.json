@@ -12,61 +12,61 @@
     {
       "title": "Quick Start",
       "pages": [
-        "getting-started/quick-start",
-        "getting-started/requirements"
+        "quick-start/quick-start",
+        "quick-start/requirements"
       ]
     },
     {
       "title": "Setup & Infrastructure",
       "pages": [
-        "getting-started/bitcoin-and-titan-setup",
-        "concepts/architecture",
-        "concepts/network-architecture"
+        "setup-infrastructure/bitcoin-and-titan-setup",
+        "setup-infrastructure/architecture",
+        "setup-infrastructure/network-architecture"
       ]
     },
     {
       "title": "Core Concepts",
       "pages": [
-        "concepts/bitcoin-integration",
-        "concepts/consensus"
+        "core-concepts/bitcoin-integration",
+        "core-concepts/consensus"
       ]
     },
     {
       "title": "Development",
       "pages": [
-        "guides/writing-your-first-program",
-        "guides/how-to-create-a-fungible-token",
-        "guides/how-to-write-oracle-program"
+        "development/writing-your-first-program",
+        "development/how-to-create-a-fungible-token",
+        "development/how-to-write-oracle-program"
       ]
     },
     {
       "title": "DeFi & Applications",
       "pages": [
-        "guides/how-to-build-runes-swap",
-        "guides/how-to-build-lending-protocol"
+        "defi-applications/how-to-build-runes-swap",
+        "defi-applications/how-to-build-lending-protocol"
       ]
     },
     {
       "title": "APL (Arch Program Library)",
       "pages": [
-        "apl/introduction",
-        "apl/token-program",
-        "apl/associated-token-account"
+        "APL/introduction",
+        "APL/token-program",
+        "APL/associated-token-account"
       ]
     },
     {
       "title": "Tools & APIs",
       "pages": [
-        "guides/arch-cli-reference",
-        "sdk/sdk",
-        "rpc/api-reference"
+        "tools-apis/arch-cli-reference",
+        "tools-apis/sdk",
+        "tools-apis/api-reference"
       ]
     },
     {
       "title": "Help & Resources",
       "pages": [
-        "getting-started/faq",
-        "getting-started/resources"
+        "help-resources/faq",
+        "help-resources/resources"
       ]
     }
   ]
