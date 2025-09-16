@@ -1,0 +1,349 @@
+---
+title: "System Requirements"
+description: "Hardware and software requirements for Arch Network development"
+---
+
+Welcome to the Arch Network development guide. This page contains all the requirements and setup instructions needed to start developing with Arch Network.
+
+## System Requirements
+
+### Hardware Requirements
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| CPU | 4+ cores | 8+ cores |
+| RAM | 16GB | 32GB |
+| Storage | 100GB SSD | 500GB+ SSD |
+| Network | 100Mbps | 1Gbps+ |
+
+### Software Requirements
+
+| Requirement | Minimum Version | Description |
+|------------|----------------|-------------|
+| Operating System | Ubuntu 20.04+ / macOS 12.0+ | Latest LTS recommended |
+| Git | Latest | Version control |
+| Rust | Latest stable | Core development language |
+| Solana CLI | v2.0+ | Program compilation tools |
+| Arch Network CLI | Latest | Development toolkit |
+
+## Installation Guide
+
+### 1. Install Rust
+
+```bash
+# Install Rust using rustup
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env  # Add Rust to your current shell session
+
+# Verify installation
+rustc --version
+cargo --version
+```
+
+### 2. Install Build Tools
+
+#### macOS
+```bash
+xcode-select --install  # Install Command Line Tools
+```
+
+#### Linux (Debian/Ubuntu)
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential gcc-multilib jq
+```
+
+### 3. Install Solana CLI
+
+```bash
+sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
+
+# Verify installation (should show 2.x.x or later)
+solana --version
+```
+
+### 4. Install Arch Network CLI
+
+<Cards>
+  <Card title="macOS - Apple Silicon" href="#macos-apple-silicon">
+    Installation instructions for Apple Silicon Macs
+  </Card>
+  <Card title="macOS - Intel" href="#macos-intel">
+    Installation instructions for Intel Macs
+  </Card>
+  <Card title="Linux - x86_64" href="#linux-x86_64">
+    Installation instructions for Linux x86_64
+  </Card>
+  <Card title="Linux - ARM64" href="#linux-arm64">
+    Installation instructions for Linux ARM64
+  </Card>
+</Cards>
+
+#### macOS - Apple Silicon
+
+```bash
+curl -L -o cli https://github.com/Arch-Network/arch-node/releases/latest/download/cli-aarch64-apple-darwin
+chmod +x cli
+sudo mv cli /usr/local/bin/
+```
+
+#### macOS - Intel
+
+```bash
+curl -L -o cli https://github.com/Arch-Network/arch-node/releases/latest/download/cli-x86_64-apple-darwin
+chmod +x cli
+sudo mv cli /usr/local/bin/
+```
+
+#### Linux - x86_64
+
+```bash
+curl -L -o cli https://github.com/Arch-Network/arch-node/releases/latest/download/cli-x86_64-unknown-linux-gnu
+chmod +x cli
+sudo mv cli /usr/local/bin/
+```
+
+#### Linux - ARM64
+
+```bash
+curl -L -o cli https://github.com/Arch-Network/arch-node/releases/latest/download/cli-aarch64-unknown-linux-gnu
+chmod +x cli
+sudo mv cli /usr/local/bin/
+```
+
+Verify installation:
+```bash
+cli --version
+```
+
+## Docker Requirements
+
+For running the complete Arch Network stack locally, you'll need Docker:
+
+### Install Docker
+
+#### macOS
+- **Recommended**: [OrbStack](https://orbstack.dev/) - Lightweight and fast
+- **Alternative**: [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+#### Linux
+```bash
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install -y docker.io docker-compose
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Add your user to docker group
+sudo usermod -aG docker $USER
+# Log out and back in for changes to take effect
+```
+
+#### Windows
+- [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
+
+### Verify Docker Installation
+
+```bash
+docker --version
+docker-compose --version
+docker run hello-world
+```
+
+## Development Environment Setup
+
+### VS Code (Recommended)
+
+Install the following extensions:
+- **Rust Analyzer** - Rust language support
+- **Solana** - Solana program development
+- **GitLens** - Enhanced Git capabilities
+- **Thunder Client** - API testing
+- **Markdown All in One** - Markdown support
+
+### Terminal Setup
+
+#### macOS (iTerm2 + Oh My Zsh)
+```bash
+# Install iTerm2
+brew install --cask iterm2
+
+# Install Oh My Zsh
+sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+# Install useful plugins
+git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+```
+
+#### Linux (Terminator + Oh My Bash)
+```bash
+# Install Terminator
+sudo apt-get install terminator
+
+# Install Oh My Bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)"
+```
+
+## Network Requirements
+
+### Port Configuration
+
+The following ports need to be available:
+
+| Service | Port | Description |
+|---------|------|-------------|
+| Bitcoin Core RPC | 18443 (regtest) / 18332 (testnet) | Bitcoin RPC interface |
+| Titan HTTP API | 8080 | Titan HTTP API |
+| Titan TCP API | 3030 | Titan TCP interface |
+| Arch Validator RPC | 9002 | Validator RPC interface |
+| Arch Validator P2P | 9003 | Peer-to-peer networking |
+
+### Firewall Configuration
+
+#### macOS
+```bash
+# Allow incoming connections (if needed)
+sudo pfctl -f /etc/pf.conf
+```
+
+#### Linux (UFW)
+```bash
+# Allow specific ports
+sudo ufw allow 9002
+sudo ufw allow 9003
+sudo ufw allow 8080
+sudo ufw allow 3030
+```
+
+## Troubleshooting
+
+### Solana Installation Issues
+
+If you installed Rust through Homebrew and encounter `cargo-build-sbf` issues:
+
+1. Remove existing Rust installation:
+```bash
+rustup self uninstall
+```
+
+2. Perform clean Rust installation:
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+3. Reinstall Solana:
+```bash
+sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
+```
+
+### Docker Issues
+
+**Docker daemon not running:**
+```bash
+# macOS (Docker Desktop)
+open -a Docker
+
+# Linux
+sudo systemctl start docker
+```
+
+**Permission denied:**
+```bash
+# Add user to docker group
+sudo usermod -aG docker $USER
+# Log out and back in
+```
+
+### Network Issues
+
+**Port already in use:**
+```bash
+# Find process using port
+lsof -i :9002
+
+# Kill process
+kill -9 <PID>
+```
+
+**Connection refused:**
+```bash
+# Check if service is running
+curl http://localhost:9002/health
+
+# Check service logs
+arch-cli orchestrate logs
+```
+
+## Performance Optimization
+
+### System Tuning
+
+#### Linux
+```bash
+# Increase file descriptor limits
+echo "* soft nofile 65536" | sudo tee -a /etc/security/limits.conf
+echo "* hard nofile 65536" | sudo tee -a /etc/security/limits.conf
+
+# Optimize network settings
+echo "net.core.rmem_max = 134217728" | sudo tee -a /etc/sysctl.conf
+echo "net.core.wmem_max = 134217728" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+```
+
+#### macOS
+```bash
+# Increase file descriptor limits
+sudo launchctl limit maxfiles 65536 200000
+```
+
+### Docker Optimization
+
+```bash
+# Increase Docker memory limit
+# In Docker Desktop: Settings > Resources > Memory > 8GB+
+
+# Enable experimental features for better performance
+echo '{"experimental": true}' | sudo tee /etc/docker/daemon.json
+sudo systemctl restart docker
+```
+
+## Verification Checklist
+
+Before proceeding with development, verify:
+
+- [ ] Rust is installed and working (`rustc --version`)
+- [ ] Solana CLI is installed (`solana --version`)
+- [ ] Arch CLI is installed (`arch-cli --version`)
+- [ ] Docker is running (`docker --version`)
+- [ ] All required ports are available
+- [ ] Development environment is configured
+- [ ] Network connectivity is working
+
+## Next Steps
+
+<Cards>
+  <Card title="Quick Start Guide" href="/docs/getting-started/quick-start">
+    Get your first program running in 15 minutes
+  </Card>
+  <Card title="Validator Setup" href="/docs/getting-started/bitcoin-and-titan-setup">
+    Set up a complete validator node
+  </Card>
+  <Card title="Writing Your First Program" href="/docs/guides/writing-your-first-program">
+    Learn to build Arch programs
+  </Card>
+</Cards>
+
+## Need Help?
+
+<Cards>
+  <Card title="Troubleshooting Guide" href="/docs/reference/troubleshooting">
+    Common issues and solutions
+  </Card>
+  <Card title="Discord Community" href="https://discord.gg/archnetwork" external>
+    Join our developer community
+  </Card>
+  <Card title="GitHub Issues" href="https://github.com/Arch-Network/arch-node/issues" external>
+    Report bugs and request features
+  </Card>
+</Cards>

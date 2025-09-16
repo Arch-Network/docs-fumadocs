@@ -1,0 +1,400 @@
+---
+title: "🏗️ Validator Setup"
+description: "Complete guide to setting up a full Arch Network validator node with Bitcoin Core and Titan indexer"
+---
+
+Welcome to the validator setup guide! This guide will walk you through setting up a full Arch Network validator node. You can choose between an automated setup or manual configuration depending on your needs.
+
+## 🎯 What You'll Build
+
+```mermaid
+graph TD
+    A[Bitcoin Core] -->|Blockchain Data| B[Titan Indexer]
+    B -->|Efficient Queries| C[Validator Node]
+    C -->|Participate in| D[Arch Network]
+    D -->|Secure| E[Bitcoin Network]
+    classDef default fill:#f8f9fa,stroke:#dee2e6,stroke-width:2px,rx:10px,ry:10px
+    classDef bitcoin fill:#ffd700,stroke:#f4c430,stroke-width:2px,rx:10px,ry:10px
+    classDef titan fill:#4a90e2,stroke:#357abd,stroke-width:2px,rx:10px,ry:10px
+    classDef validator fill:#2ed573,stroke:#26ae60,stroke-width:2px,rx:10px,ry:10px
+    classDef arch fill:#ff6b81,stroke:#ff4757,stroke-width:2px,rx:10px,ry:10px
+    class A,E bitcoin
+    class B titan
+    class C validator
+    class D arch
+```
+
+## 🎯 Component Architecture
+
+```mermaid
+graph TD
+    A[Your dApp] -->|Interacts with| B[Local Validator]
+    B -->|Queries| C[Titan]
+    C -->|Reads| D[Bitcoin Core]
+    D -->|Manages| E[Local Blockchain]
+    classDef default fill:#f8f9fa,stroke:#dee2e6,stroke-width:2px,rx:10px,ry:10px
+    classDef dapp fill:#ff6b81,stroke:#ff4757,stroke-width:2px,rx:10px,ry:10px
+    classDef validator fill:#2ed573,stroke:#26ae60,stroke-width:2px,rx:10px,ry:10px
+    classDef titan fill:#4a90e2,stroke:#357abd,stroke-width:2px,rx:10px,ry:10px
+    classDef bitcoin fill:#ffd700,stroke:#f4c430,stroke-width:2px,rx:10px,ry:10px
+    classDef blockchain fill:#a4b0be,stroke:#747d8c,stroke-width:2px,rx:10px,ry:10px
+    class A dapp
+    class B validator
+    class C titan
+    class D bitcoin
+    class E blockchain
+    linkStyle default stroke:#a4b0be,stroke-width:2px
+```
+
+## 💡 Understanding Your Role
+
+As a validator, you will:
+- Execute smart contracts and validate transactions
+- Participate in network consensus
+- Help secure the Bitcoin integration
+- Earn rewards for your contribution
+
+## 📋 System Requirements
+
+- **CPU**: 4+ cores recommended
+- **RAM**: 16GB+ recommended  
+- **Storage**: 100GB+ SSD for regtest, 500GB+ for testnet/mainnet
+- **Network**: Stable internet connection (10+ Mbps)
+- **OS**: Linux (Ubuntu 20.04+) or macOS (12.0+)
+
+## 🚀 Setup Options
+
+Choose your preferred setup method:
+
+### Option A: Automated Setup (Recommended)
+
+The easiest way to get started using the CLI orchestrate command.
+
+**Prerequisites:**
+- **Docker**: Required on all platforms - [Install Docker](https://docs.docker.com/engine/install/)
+- **Docker Management** (optional but recommended):
+  - **macOS**: [OrbStack](https://orbstack.dev/) (recommended) or [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+  - **Linux**: [Docker Desktop](https://www.docker.com/products/docker-desktop/) (optional GUI)
+- **Arch Network CLI** - Download from [releases](https://github.com/Arch-Network/arch-node/releases/latest)
+
+**Setup:**
+```bash
+# 1. Download and install the Arch CLI
+# (Download the appropriate binary for your platform from the releases page)
+
+# 2. Start the complete validator stack
+arch-cli orchestrate start
+```
+
+This automatically starts:
+- Bitcoin Core (regtest mode)
+- Titan indexer
+- Local validator
+- All necessary networking and configuration
+
+**Service URLs:**
+- Bitcoin Core RPC: `http://127.0.0.1:18443`
+- Titan API: `http://127.0.0.1:3030`
+- Validator RPC: `http://127.0.0.1:9002`
+
+**Management Commands:**
+```bash
+# Stop all services
+arch-cli orchestrate stop
+
+# Restart all services
+arch-cli orchestrate restart
+
+# Check service status
+arch-cli orchestrate status
+
+# View logs
+arch-cli orchestrate logs
+
+# Reset everything (clears all data)
+arch-cli orchestrate reset
+```
+
+### Option B: Manual Setup
+
+For advanced users who want full control over each component.
+
+#### Step 1: Bitcoin Core Setup
+
+**Install Bitcoin Core:**
+```bash
+# Download and install Bitcoin Core
+# Visit https://bitcoincore.org/en/download/ for your platform
+
+# For Ubuntu/Debian:
+wget https://bitcoincore.org/bin/bitcoin-core-25.0/bitcoin-25.0-x86_64-linux-gnu.tar.gz
+tar -xzf bitcoin-25.0-x86_64-linux-gnu.tar.gz
+sudo cp bitcoin-25.0/bin/* /usr/local/bin/
+```
+
+**Configure Bitcoin Core:**
+```bash
+# Create Bitcoin data directory
+mkdir -p ~/.bitcoin
+
+# Create bitcoin.conf
+cat > ~/.bitcoin/bitcoin.conf << EOF
+# Network configuration
+regtest=1
+server=1
+rpcuser=bitcoin
+rpcpassword=bitcoinpass
+rpcport=18443
+rpcbind=127.0.0.1
+rpcallowip=127.0.0.1
+
+# Performance settings
+dbcache=1000
+maxmempool=2000
+maxconnections=25
+
+# Logging
+debug=1
+logtimestamps=1
+logips=1
+EOF
+```
+
+**Start Bitcoin Core:**
+```bash
+# Start Bitcoin Core in regtest mode
+bitcoind -regtest -daemon
+
+# Verify it's running
+bitcoin-cli -regtest getblockchaininfo
+```
+
+#### Step 2: Titan Indexer Setup
+
+**Install Titan:**
+```bash
+# Clone Titan repository
+git clone https://github.com/saturnbtc/Titan.git
+cd Titan
+
+# Build Titan
+cargo build --release
+
+# Create Titan configuration
+mkdir -p ~/.titan
+cat > ~/.titan/config.toml << EOF
+[network]
+network = "regtest"
+
+[bitcoin]
+rpc_url = "http://bitcoin:bitcoinpass@127.0.0.1:18443"
+
+[server]
+http_addr = "127.0.0.1:8080"
+tcp_addr = "127.0.0.1:3030"
+EOF
+```
+
+**Start Titan:**
+```bash
+# Start Titan indexer
+./target/release/titan --config ~/.titan/config.toml
+```
+
+#### Step 3: Arch Validator Setup
+
+**Install Arch Validator:**
+```bash
+# Download Arch validator binary
+# Visit https://github.com/Arch-Network/arch-node/releases/latest
+
+# For Linux:
+wget https://github.com/Arch-Network/arch-node/releases/latest/download/arch-node-x86_64-unknown-linux-gnu
+chmod +x arch-node-x86_64-unknown-linux-gnu
+sudo mv arch-node-x86_64-unknown-linux-gnu /usr/local/bin/arch-node
+```
+
+**Configure Validator:**
+```bash
+# Create validator data directory
+mkdir -p ~/.arch_data
+
+# Create validator configuration
+cat > ~/.arch_data/config.toml << EOF
+[network]
+mode = "devnet"
+bitcoin_rpc_url = "http://bitcoin:bitcoinpass@127.0.0.1:18443"
+titan_rpc_url = "http://127.0.0.1:3030"
+
+[validator]
+rpc_port = 9002
+p2p_port = 9003
+data_dir = "~/.arch_data"
+
+[logging]
+level = "info"
+EOF
+```
+
+**Start Validator:**
+```bash
+# Start Arch validator
+arch-node --config ~/.arch_data/config.toml
+```
+
+## 🔧 Configuration Options
+
+### Network Modes
+
+<Cards>
+  <Card title="Regtest (Development)" href="#regtest-configuration">
+    Local development with instant block generation
+  </Card>
+  <Card title="Testnet (Testing)" href="#testnet-configuration">
+    Public test network with real Bitcoin testnet
+  </Card>
+  <Card title="Mainnet (Production)" href="#mainnet-configuration">
+    Production network (not yet available)
+  </Card>
+</Cards>
+
+### Regtest Configuration
+
+Perfect for development and testing:
+
+```bash
+# Bitcoin Core regtest configuration
+regtest=1
+server=1
+rpcuser=bitcoin
+rpcpassword=bitcoinpass
+rpcport=18443
+
+# Generate blocks instantly for testing
+bitcoin-cli -regtest generatetoaddress 100 $(bitcoin-cli -regtest getnewaddress)
+```
+
+### Testnet Configuration
+
+For testing with real Bitcoin testnet:
+
+```bash
+# Bitcoin Core testnet configuration
+testnet=1
+server=1
+rpcuser=bitcoin
+rpcpassword=bitcoinpass
+rpcport=18332
+
+# Connect to testnet
+bitcoin-cli -testnet getblockchaininfo
+```
+
+## 🧪 Testing Your Setup
+
+### Verify Bitcoin Core
+```bash
+# Check Bitcoin Core status
+bitcoin-cli -regtest getblockchaininfo
+
+# Generate some test blocks
+bitcoin-cli -regtest generatetoaddress 10 $(bitcoin-cli -regtest getnewaddress)
+
+# Check balance
+bitcoin-cli -regtest getbalance
+```
+
+### Verify Titan Indexer
+```bash
+# Check Titan API
+curl http://127.0.0.1:8080/health
+
+# Get block information
+curl http://127.0.0.1:8080/api/v1/blocks/latest
+```
+
+### Verify Arch Validator
+```bash
+# Check validator status
+curl http://127.0.0.1:9002/health
+
+# Get network information
+curl http://127.0.0.1:9002/api/v1/network/info
+```
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+**Bitcoin Core won't start:**
+```bash
+# Check if port is already in use
+netstat -tulpn | grep 18443
+
+# Kill existing process
+pkill bitcoind
+
+# Check Bitcoin Core logs
+tail -f ~/.bitcoin/regtest/debug.log
+```
+
+**Titan connection issues:**
+```bash
+# Verify Bitcoin RPC connection
+curl -u bitcoin:bitcoinpass http://127.0.0.1:18443
+
+# Check Titan logs
+tail -f ~/.titan/logs/titan.log
+```
+
+**Validator startup problems:**
+```bash
+# Check validator logs
+tail -f ~/.arch_data/logs/validator.log
+
+# Verify all dependencies are running
+arch-cli orchestrate status
+```
+
+### Performance Optimization
+
+**For better performance:**
+```bash
+# Increase Bitcoin Core cache
+echo "dbcache=2000" >> ~/.bitcoin/bitcoin.conf
+
+# Optimize Titan settings
+echo "max_connections=100" >> ~/.titan/config.toml
+
+# Restart services
+arch-cli orchestrate restart
+```
+
+## 📚 Next Steps
+
+<Cards>
+  <Card title="Deploy Your First Program" href="/docs/guides/writing-your-first-program">
+    Learn how to deploy and interact with programs
+  </Card>
+  <Card title="Understanding Architecture" href="/docs/concepts/architecture">
+    Deep dive into Arch Network architecture
+  </Card>
+  <Card title="Bitcoin Integration" href="/docs/concepts/bitcoin-integration">
+    Learn how Arch integrates with Bitcoin
+  </Card>
+  <Card title="Join the Community" href="https://discord.gg/archnetwork" external>
+    Get help and connect with other developers
+  </Card>
+</Cards>
+
+## 🆘 Getting Help
+
+If you encounter issues:
+
+1. **Check the logs** for error messages
+2. **Verify all services** are running correctly
+3. **Join our Discord** for community support
+4. **Review the troubleshooting guide** for common solutions
+5. **Submit an issue** on GitHub if you find a bug
+
+Welcome to the Arch Network validator community! 🎉

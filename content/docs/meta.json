@@ -12,7 +12,9 @@
     {
       "title": "Getting Started",
       "pages": [
-        "getting-started/quick-start"
+        "getting-started/quick-start",
+        "getting-started/bitcoin-and-titan-setup",
+        "getting-started/requirements"
       ]
     },
     {
