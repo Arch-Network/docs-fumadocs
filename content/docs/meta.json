@@ -38,7 +38,7 @@
       ]
     },
     {
-      "title": "Arch Program Library (APL)",
+      "title": "APL (Arch Program Library)",
       "pages": [
         "apl/introduction",
         "apl/token-program"
@@ -56,7 +56,9 @@
     },
     {
       "title": "Reference",
-      "pages": []
+      "pages": [
+        "rpc/api-reference"
+      ]
     },
     {
       "title": "Resources",

@@ -1,0 +1,380 @@
+---
+title: "RPC API Reference"
+description: "Complete JSON-RPC API reference for interacting with Arch Network validator nodes"
+---
+
+The Arch Network provides a comprehensive JSON-RPC API for interacting with validator nodes. This API allows you to:
+
+- Query account information and balances
+- Submit transactions to the network
+- Retrieve block and transaction data
+- Monitor network state and readiness
+- Manage validator operations
+
+:::note
+**RPC Method Availability**: For a complete list of which RPC methods are available in the `validator` vs `local_validator` crates, along with their correct parameter formats, see the [RPC Method Availability Guide](/docs/rpc/rpc-method-availability).
+:::
+
+## API Endpoints
+
+### Default Configuration
+- **Default Port**: `9001` for validator nodes, `9002` for local validators
+- **Endpoint URL**: `http://localhost:9002` (or your node's IP address)
+- **Protocol**: HTTP POST with JSON-RPC 2.0
+
+### Request Format
+All RPC requests must be sent as HTTP `POST` requests with:
+- **Content-Type**: `application/json`
+- **JSON-RPC Version**: `"2.0"`
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "method_name",
+  "params": [/* parameters */]
+}
+```
+
+### Response Format
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {/* response data */}
+}
+```
+
+## Available Methods
+
+### Account Operations
+- [`read_account_info`](#read_account_info) - Get account information
+- [`get_account_address`](#get_account_address) - Get Bitcoin address for account
+- [`get_program_accounts`](#get_program_accounts) - Query accounts by program ID
+- [`get_all_accounts`](#get_all_accounts) - Get all account public keys
+
+### Transaction Operations
+- [`send_transaction`](#send_transaction) - Submit a single transaction
+- [`send_transactions`](#send_transactions) - Submit multiple transactions
+- [`get_processed_transaction`](#get_processed_transaction) - Get transaction status and details
+- [`get_transaction_report`](#get_transaction_report) - Get detailed transaction processing report
+
+### Block Operations
+- [`get_block`](#get_block) - Get block by hash
+- [`get_block_count`](#get_block_count) - Get current block count
+- [`get_block_hash`](#get_block_hash) - Get block hash by height
+- [`get_best_block_hash`](#get_best_block_hash) - Get latest block hash
+
+### Network Operations
+- [`is_node_ready`](#is_node_ready) - Check node readiness
+- [`get_peers`](#get_peers) - Get connected network peers
+- [`get_current_state`](#get_current_state) - Get current validator node state
+- [`get_network_pubkey`](#get_network_pubkey) - Get the network verifying key
+
+### System Operations
+- [`get_version`](#get_version) - Get node version information
+
+## Account Operations
+
+### read_account_info
+
+Retrieves information for a specified account.
+
+**Parameters:**
+1. `pubkey` - Account public key as a 32-byte array
+
+**Returns:** Account information object with `data`, `owner`, `utxo`, `is_executable`, and `tag` fields.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "read_account_info",
+    "params": ["11111111111111111111111111111112"]
+  }'
+```
+
+### get_account_address
+
+Gets the Bitcoin address associated with an account.
+
+**Parameters:**
+1. `pubkey` - Account public key as a 32-byte array
+
+**Returns:** Bitcoin address string.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_account_address",
+    "params": ["11111111111111111111111111111112"]
+  }'
+```
+
+### get_program_accounts
+
+Retrieves all accounts owned by a specific program.
+
+**Parameters:**
+1. `program_id` - Program public key as a 32-byte array
+
+**Returns:** Array of account information objects.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_program_accounts",
+    "params": ["AplToken111111111111111111111111"]
+  }'
+```
+
+## Transaction Operations
+
+### send_transaction
+
+Submits a transaction to the network for processing.
+
+**Parameters:**
+1. `transaction` - Base64-encoded transaction data
+
+**Returns:** Transaction signature string.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "send_transaction",
+    "params": ["base64_encoded_transaction_data"]
+  }'
+```
+
+### get_processed_transaction
+
+Retrieves the status and details of a processed transaction.
+
+**Parameters:**
+1. `signature` - Transaction signature string
+
+**Returns:** Transaction status and details object.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_processed_transaction",
+    "params": ["transaction_signature_here"]
+  }'
+```
+
+## Block Operations
+
+### get_block
+
+Retrieves block information by block hash.
+
+**Parameters:**
+1. `block_hash` - Block hash as a 32-byte array
+
+**Returns:** Block information object.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_block",
+    "params": ["block_hash_here"]
+  }'
+```
+
+### get_block_count
+
+Gets the current block count (height) of the blockchain.
+
+**Parameters:** None
+
+**Returns:** Block count as a number.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_block_count",
+    "params": []
+  }'
+```
+
+## Network Operations
+
+### is_node_ready
+
+Checks if the node is ready to process requests.
+
+**Parameters:** None
+
+**Returns:** Boolean indicating node readiness.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "is_node_ready",
+    "params": []
+  }'
+```
+
+### get_peers
+
+Retrieves information about connected network peers.
+
+**Parameters:** None
+
+**Returns:** Array of peer information objects.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_peers",
+    "params": []
+  }'
+```
+
+## Error Handling
+
+### Error Response Format
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "error": {
+    "code": -32602,
+    "message": "Invalid params",
+    "data": "Additional error details"
+  }
+}
+```
+
+### Common Error Codes
+- `-32600`: Invalid Request
+- `-32601`: Method not found
+- `-32602`: Invalid params
+- `-32603`: Internal error
+- `-32000`: Server error (custom)
+
+## SDK Integration
+
+### TypeScript SDK
+```typescript
+import { Connection } from '@saturnbtcio/arch-sdk';
+
+const connection = new Connection('http://localhost:9002');
+
+// Get account info
+const accountInfo = await connection.getAccountInfo(publicKey);
+
+// Send transaction
+const signature = await connection.sendTransaction(transaction);
+```
+
+### Rust SDK
+```rust
+use arch_sdk::{Connection, Pubkey};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let connection = Connection::new("http://localhost:9002");
+    
+    // Get account info
+    let account_info = connection.get_account_info(&public_key).await?;
+    
+    // Send transaction
+    let signature = connection.send_transaction(&transaction).await?;
+    
+    Ok(())
+}
+```
+
+## Best Practices
+
+### 1. Connection Management
+- Use connection pooling for high-frequency requests
+- Implement proper timeout handling
+- Monitor connection health
+
+### 2. Error Handling
+- Always check for RPC errors
+- Implement retry logic for transient failures
+- Log errors for debugging
+
+### 3. Performance
+- Batch multiple requests when possible
+- Use appropriate polling intervals
+- Cache frequently accessed data
+
+### 4. Security
+- Use HTTPS in production
+- Implement proper authentication
+- Validate all input parameters
+
+## Next Steps
+
+<Cards>
+  <Card title="RPC Method Availability" href="/docs/rpc/rpc-method-availability">
+    Check which methods are available in different environments
+  </Card>
+  <Card title="SDK Reference" href="/docs/sdk/sdk">
+    Learn to use the SDKs for easier integration
+  </Card>
+  <Card title="CLI Reference" href="/docs/guides/arch-cli-reference">
+    Use the CLI for common operations
+  </Card>
+  <Card title="Examples" href="https://github.com/Arch-Network/arch-examples" external>
+    Explore example implementations
+  </Card>
+</Cards>
+
+## Resources
+
+<Cards>
+  <Card title="Arch Network Repository" href="https://github.com/Arch-Network/arch-network" external>
+    Source code and issues
+  </Card>
+  <Card title="TypeScript SDK" href="https://github.com/saturnbtc/arch-typescript-sdk" external>
+    TypeScript SDK for easier integration
+  </Card>
+  <Card title="Community Discord" href="https://discord.gg/archnetwork" external>
+    Get help from the community
+  </Card>
+  <Card title="Arch Examples" href="https://github.com/Arch-Network/arch-examples" external>
+    Example applications and programs
+  </Card>
+</Cards>
