@@ -42,13 +42,13 @@ Arch Network is a computation environment that enhances Bitcoin's capabilities b
   <Card title="Computation Environment" href="/docs/setup-infrastructure/architecture">
     Execute complex programs within the Arch VM
   </Card>
-  <Card title="Program Development" href="/docs/program/program">
+  <Card title="Program Development" href="/docs/development/writing-your-first-program">
     Write programs in Rust to interact with Bitcoin UTXOs
   </Card>
   <Card title="Security" href="/docs/setup-infrastructure/network-architecture">
     Leverages Bitcoin's proven security guarantees through multi-signature validation
   </Card>
-  <Card title="Developer Tools" href="/docs/getting-started/environment-setup">
+  <Card title="Developer Tools" href="/docs/tools-apis/arch-cli-reference">
     Complete development environment with CLI tools and explorer
   </Card>
 </Cards>
@@ -60,7 +60,7 @@ Before you begin, ensure you have:
 - Node.js v19+ ([installation guide](/docs/quick-start/requirements))
 - Rust (latest stable)
 - Docker for local development
-- Basic understanding of [Bitcoin UTXOs](/docs/program/utxo)
+- Basic understanding of [Bitcoin Integration](/docs/core-concepts/bitcoin-integration)
 
 ## Core Architecture
 
@@ -85,11 +85,11 @@ Arch Network consists of three main components:
      - Network synchronization
 
 3. **Computation Layer**
-   - [Programs](/docs/program/program)
-     - [Instructions](/docs/program/instructions-and-messages)
-     - [Accounts](/docs/program/accounts)
-     - [System Calls](/docs/program/syscall)
-   - [Transaction Processing](/docs/sdk/processed-transaction)
+   - [Programs](/docs/development/writing-your-first-program)
+     - [Instructions](/docs/development/writing-your-first-program)
+     - [Accounts](/docs/development/writing-your-first-program)
+     - [System Calls](/docs/development/writing-your-first-program)
+   - [Transaction Processing](/docs/tools-apis/sdk)
      - Message validation
      - State updates
      - UTXO management
@@ -97,13 +97,13 @@ Arch Network consists of three main components:
 ## 🛠 Reference Documentation
 
 <Cards>
-  <Card title="API Reference" href="/docs/rpc/rpc">
+  <Card title="API Reference" href="/docs/tools-apis/api-reference">
     RPC API Reference and Transaction Processing
   </Card>
   <Card title="Program Examples" href="/docs/development/writing-your-first-program">
     Oracle Program and Fungible Token examples
   </Card>
-  <Card title="System Program" href="/docs/system-program/system-program">
+  <Card title="System Program" href="/docs/APL/introduction">
     Account Creation and Program Deployment
   </Card>
 </Cards>
@@ -120,7 +120,7 @@ Arch Network consists of three main components:
   <Card title="Example Programs" href="/docs/development/writing-your-first-program">
     View Example Programs
   </Card>
-  <Card title="API Reference" href="/docs/rpc/rpc">
+  <Card title="API Reference" href="/docs/tools-apis/api-reference">
     Check the API Reference
   </Card>
 </Cards>
