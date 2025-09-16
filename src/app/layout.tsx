@@ -10,9 +10,11 @@ export default function Layout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="en" className={inter.className} suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/arch-favicon.ico" type="image/x-icon" />
         <link rel="icon" href="/arch-logo.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.png" type="image/png" />
         <link rel="apple-touch-icon" href="/favicon.png" />
+        <meta name="theme-color" content="#4E3AF1" />
       </head>
       <body className="flex flex-col min-h-screen">
         <RootProvider>{children}</RootProvider>
