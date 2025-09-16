@@ -18,16 +18,22 @@
     {
       "title": "Core Concepts",
       "pages": [
-        "concepts/architecture"
+        "concepts/architecture",
+        "concepts/bitcoin-integration",
+        "concepts/consensus"
       ]
     },
     {
       "title": "Program Development",
-      "pages": []
+      "pages": [
+        "guides/writing-your-first-program"
+      ]
     },
     {
       "title": "Arch Program Library (APL)",
-      "pages": []
+      "pages": [
+        "apl/introduction"
+      ]
     },
     {
       "title": "SDK Reference",

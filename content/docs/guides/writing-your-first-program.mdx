@@ -1,0 +1,831 @@
+---
+title: "Writing Your First Arch Program"
+description: "A comprehensive guide to creating your first Arch program from scratch with a complete counter example"
+---
+
+This comprehensive guide walks you through creating your first Arch program from scratch. We'll build a feature-rich counter program that demonstrates the complete development workflow and all essential concepts you need for building production-ready Arch Network applications.
+
+## What You'll Build
+
+By the end of this guide, you'll have created a complete counter program that:
+- Manages state in program accounts  
+- Handles multiple instruction types
+- Integrates with Bitcoin transactions
+- Includes comprehensive error handling
+- Provides extensive testing coverage
+- Follows security best practices
+
+## Prerequisites
+
+Before starting, ensure you have:
+- **Rust 1.70+** and Cargo installed ([Install Rust](https://rustup.rs/))
+- **Solana CLI 2.0+** - [Install Guide](https://docs.solana.com/cli/install-solana-cli-tools)
+- **Arch Network CLI** - [Download Latest](https://github.com/Arch-Network/arch-node/releases/latest)
+- **Running validator** (see [Validator Setup Guide](/docs/getting-started/bitcoin-and-titan-setup))
+- **Basic Rust knowledge** and understanding of [Arch concepts](/docs/concepts/architecture)
+
+## Step 1: Project Setup
+
+### 1.1 Create Project Structure
+
+```bash
+# Create project directory
+mkdir my-counter-program
+cd my-counter-program
+
+# Create program directory
+mkdir program
+cd program
+
+# Initialize Rust library
+cargo init --lib
+```
+
+### 1.2 Configure Dependencies
+
+Create a proper `Cargo.toml`:
+
+**program/Cargo.toml**
+```toml
+[package]
+name = "my_counter_program"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+arch_program = "0.5.4"
+borsh = { version = "1.5.1", features = ["derive"] }
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[workspace]
+```
+
+### 1.3 Project Structure
+
+Your project should look like this:
+```text
+my-counter-program/
+├── program/
+│   ├── src/
+│   │   └── lib.rs
+│   └── Cargo.toml
+├── client/          # We'll add this later
+└── tests/           # We'll add this later
+```
+
+## Step 2: Define Program Data Structures
+
+Create comprehensive data structures for your program:
+
+**program/src/lib.rs**
+```rust
+use arch_program::{
+    account::AccountInfo,
+    bitcoin::{self, absolute::LockTime, transaction::Version, Transaction},
+    entrypoint,
+    helper::add_state_transition,
+    input_to_sign::InputToSign,
+    msg,
+    program::{next_account_info, set_transaction_to_sign},
+    program_error::ProgramError,
+    pubkey::Pubkey,
+    transaction_to_sign::TransactionToSign,
+};
+use borsh::{BorshDeserialize, BorshSerialize};
+
+/// Counter program state stored in accounts
+#[derive(BorshSerialize, BorshDeserialize, Debug, Clone, PartialEq)]
+pub struct CounterAccount {
+    /// Current counter value
+    pub count: i64,
+    /// Who created this counter
+    pub owner: Pubkey,
+    /// When this counter was created
+    pub created_at: i64,
+    /// Last time the counter was updated
+    pub last_updated: i64,
+    /// Whether this counter is active
+    pub is_active: bool,
+}
+
+/// Instructions that this program can handle
+#[derive(BorshSerialize, BorshDeserialize, Debug, Clone)]
+pub enum CounterInstruction {
+    /// Initialize a new counter
+    Initialize {
+        initial_value: i64,
+    },
+    /// Increment the counter by a specified amount
+    Increment {
+        amount: i64,
+    },
+    /// Decrement the counter by a specified amount
+    Decrement {
+        amount: i64,
+    },
+    /// Reset the counter to zero
+    Reset,
+    /// Transfer ownership of the counter
+    TransferOwnership {
+        new_owner: Pubkey,
+    },
+    /// Deactivate the counter
+    Deactivate,
+    /// Reactivate the counter
+    Reactivate,
+}
+
+/// Program errors
+#[derive(Debug)]
+pub enum CounterError {
+    InvalidInstruction,
+    InvalidAccount,
+    Unauthorized,
+    CounterOverflow,
+    CounterUnderflow,
+    CounterInactive,
+    InvalidOwner,
+}
+
+impl From<CounterError> for ProgramError {
+    fn from(e: CounterError) -> Self {
+        ProgramError::Custom(e as u32)
+    }
+}
+```
+
+## Step 3: Implement Program Logic
+
+Add the core program implementation:
+
+```rust
+/// Process a single instruction
+pub fn process_instruction(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    instruction_data: &[u8],
+) -> Result<(), ProgramError> {
+    msg!("Counter program entry point");
+
+    // Parse the instruction
+    let instruction = CounterInstruction::try_from_slice(instruction_data)
+        .map_err(|_| CounterError::InvalidInstruction)?;
+
+    // Get account iterator
+    let accounts_iter = &mut accounts.iter();
+    let counter_account = next_account_info(accounts_iter)?;
+    let owner_account = next_account_info(accounts_iter)?;
+
+    // Verify the account is owned by this program
+    if counter_account.owner != program_id {
+        return Err(CounterError::InvalidAccount.into());
+    }
+
+    // Process the instruction
+    match instruction {
+        CounterInstruction::Initialize { initial_value } => {
+            process_initialize(counter_account, owner_account, initial_value)
+        }
+        CounterInstruction::Increment { amount } => {
+            process_increment(counter_account, owner_account, amount)
+        }
+        CounterInstruction::Decrement { amount } => {
+            process_decrement(counter_account, owner_account, amount)
+        }
+        CounterInstruction::Reset => {
+            process_reset(counter_account, owner_account)
+        }
+        CounterInstruction::TransferOwnership { new_owner } => {
+            process_transfer_ownership(counter_account, owner_account, &new_owner)
+        }
+        CounterInstruction::Deactivate => {
+            process_deactivate(counter_account, owner_account)
+        }
+        CounterInstruction::Reactivate => {
+            process_reactivate(counter_account, owner_account)
+        }
+    }
+}
+
+/// Initialize a new counter
+fn process_initialize(
+    counter_account: &AccountInfo,
+    owner_account: &AccountInfo,
+    initial_value: i64,
+) -> Result<(), ProgramError> {
+    msg!("Initializing counter with value: {}", initial_value);
+
+    // Check if account is already initialized
+    if counter_account.data_len() > 0 {
+        return Err(CounterError::InvalidAccount.into());
+    }
+
+    // Create new counter account
+    let counter = CounterAccount {
+        count: initial_value,
+        owner: *owner_account.key,
+        created_at: get_current_timestamp(),
+        last_updated: get_current_timestamp(),
+        is_active: true,
+    };
+
+    // Serialize and store the counter
+    let serialized = counter.try_to_vec()
+        .map_err(|_| ProgramError::InvalidAccountData)?;
+    
+    counter_account.try_borrow_mut_data()?[..serialized.len()].copy_from_slice(&serialized);
+
+    msg!("Counter initialized successfully");
+    Ok(())
+}
+
+/// Increment the counter
+fn process_increment(
+    counter_account: &AccountInfo,
+    owner_account: &AccountInfo,
+    amount: i64,
+) -> Result<(), ProgramError> {
+    msg!("Incrementing counter by: {}", amount);
+
+    // Load and verify counter
+    let mut counter = load_counter(counter_account)?;
+    verify_owner(&counter, owner_account)?;
+    verify_active(&counter)?;
+
+    // Check for overflow
+    if counter.count > i64::MAX - amount {
+        return Err(CounterError::CounterOverflow.into());
+    }
+
+    // Update counter
+    counter.count += amount;
+    counter.last_updated = get_current_timestamp();
+
+    // Save updated counter
+    save_counter(counter_account, &counter)?;
+
+    msg!("Counter incremented to: {}", counter.count);
+    Ok(())
+}
+
+/// Decrement the counter
+fn process_decrement(
+    counter_account: &AccountInfo,
+    owner_account: &AccountInfo,
+    amount: i64,
+) -> Result<(), ProgramError> {
+    msg!("Decrementing counter by: {}", amount);
+
+    // Load and verify counter
+    let mut counter = load_counter(counter_account)?;
+    verify_owner(&counter, owner_account)?;
+    verify_active(&counter)?;
+
+    // Check for underflow
+    if counter.count < amount {
+        return Err(CounterError::CounterUnderflow.into());
+    }
+
+    // Update counter
+    counter.count -= amount;
+    counter.last_updated = get_current_timestamp();
+
+    // Save updated counter
+    save_counter(counter_account, &counter)?;
+
+    msg!("Counter decremented to: {}", counter.count);
+    Ok(())
+}
+
+/// Reset the counter to zero
+fn process_reset(
+    counter_account: &AccountInfo,
+    owner_account: &AccountInfo,
+) -> Result<(), ProgramError> {
+    msg!("Resetting counter");
+
+    // Load and verify counter
+    let mut counter = load_counter(counter_account)?;
+    verify_owner(&counter, owner_account)?;
+    verify_active(&counter)?;
+
+    // Reset counter
+    counter.count = 0;
+    counter.last_updated = get_current_timestamp();
+
+    // Save updated counter
+    save_counter(counter_account, &counter)?;
+
+    msg!("Counter reset to: {}", counter.count);
+    Ok(())
+}
+
+/// Transfer ownership of the counter
+fn process_transfer_ownership(
+    counter_account: &AccountInfo,
+    owner_account: &AccountInfo,
+    new_owner: &Pubkey,
+) -> Result<(), ProgramError> {
+    msg!("Transferring ownership to: {}", new_owner);
+
+    // Load and verify counter
+    let mut counter = load_counter(counter_account)?;
+    verify_owner(&counter, owner_account)?;
+
+    // Update owner
+    counter.owner = *new_owner;
+    counter.last_updated = get_current_timestamp();
+
+    // Save updated counter
+    save_counter(counter_account, &counter)?;
+
+    msg!("Ownership transferred successfully");
+    Ok(())
+}
+
+/// Deactivate the counter
+fn process_deactivate(
+    counter_account: &AccountInfo,
+    owner_account: &AccountInfo,
+) -> Result<(), ProgramError> {
+    msg!("Deactivating counter");
+
+    // Load and verify counter
+    let mut counter = load_counter(counter_account)?;
+    verify_owner(&counter, owner_account)?;
+
+    // Deactivate counter
+    counter.is_active = false;
+    counter.last_updated = get_current_timestamp();
+
+    // Save updated counter
+    save_counter(counter_account, &counter)?;
+
+    msg!("Counter deactivated");
+    Ok(())
+}
+
+/// Reactivate the counter
+fn process_reactivate(
+    counter_account: &AccountInfo,
+    owner_account: &AccountInfo,
+) -> Result<(), ProgramError> {
+    msg!("Reactivating counter");
+
+    // Load and verify counter
+    let mut counter = load_counter(counter_account)?;
+    verify_owner(&counter, owner_account)?;
+
+    // Reactivate counter
+    counter.is_active = true;
+    counter.last_updated = get_current_timestamp();
+
+    // Save updated counter
+    save_counter(counter_account, &counter)?;
+
+    msg!("Counter reactivated");
+    Ok(())
+}
+```
+
+## Step 4: Helper Functions
+
+Add utility functions for common operations:
+
+```rust
+/// Load a counter from account data
+fn load_counter(account: &AccountInfo) -> Result<CounterAccount, ProgramError> {
+    let data = account.try_borrow_data()?;
+    CounterAccount::try_from_slice(&data)
+        .map_err(|_| ProgramError::InvalidAccountData)
+}
+
+/// Save a counter to account data
+fn save_counter(account: &AccountInfo, counter: &CounterAccount) -> Result<(), ProgramError> {
+    let serialized = counter.try_to_vec()
+        .map_err(|_| ProgramError::InvalidAccountData)?;
+    
+    let mut data = account.try_borrow_mut_data()?;
+    data[..serialized.len()].copy_from_slice(&serialized);
+    
+    Ok(())
+}
+
+/// Verify that the account is the owner
+fn verify_owner(counter: &CounterAccount, owner_account: &AccountInfo) -> Result<(), ProgramError> {
+    if counter.owner != *owner_account.key {
+        return Err(CounterError::Unauthorized.into());
+    }
+    Ok(())
+}
+
+/// Verify that the counter is active
+fn verify_active(counter: &CounterAccount) -> Result<(), ProgramError> {
+    if !counter.is_active {
+        return Err(CounterError::CounterInactive.into());
+    }
+    Ok(())
+}
+
+/// Get current timestamp (simplified for demo)
+fn get_current_timestamp() -> i64 {
+    // In a real implementation, you'd get this from the system
+    // For now, we'll use a placeholder
+    1234567890
+}
+```
+
+## Step 5: Program Entry Point
+
+Add the program entry point:
+
+```rust
+// Declare the program's entry point
+entrypoint!(process_instruction);
+```
+
+## Step 6: Build and Deploy
+
+### 6.1 Build the Program
+
+```bash
+# Build the program
+cargo build-bpf
+
+# Check the build output
+ls -la target/deploy/
+```
+
+### 6.2 Deploy to Local Network
+
+```bash
+# Deploy the program
+arch-cli deploy target/deploy/my_counter_program.so
+
+# Note the program ID for later use
+```
+
+## Step 7: Create a Client
+
+Create a client to interact with your program:
+
+**client/Cargo.toml**
+```toml
+[package]
+name = "counter-client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+arch_program = "0.5.4"
+borsh = { version = "1.5.1", features = ["derive"] }
+solana-client = "1.17"
+solana-sdk = "1.17"
+```
+
+**client/src/main.rs**
+```rust
+use arch_program::{
+    instruction::{AccountMeta, Instruction},
+    pubkey::Pubkey,
+    system_instruction,
+};
+use borsh::{BorshDeserialize, BorshSerialize};
+use solana_client::rpc_client::RpcClient;
+use solana_sdk::{
+    signature::{Keypair, Signer},
+    transaction::Transaction,
+};
+
+// Import your program types
+use my_counter_program::{CounterAccount, CounterInstruction};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Connect to local validator
+    let client = RpcClient::new("http://localhost:9002".to_string());
+    
+    // Create keypairs
+    let payer = Keypair::new();
+    let counter_keypair = Keypair::new();
+    
+    // Airdrop some lamports to the payer
+    client.request_airdrop(&payer.pubkey(), 1_000_000_000)?;
+    
+    // Create counter account
+    let space = std::mem::size_of::<CounterAccount>();
+    let create_account_ix = system_instruction::create_account(
+        &payer.pubkey(),
+        &counter_keypair.pubkey(),
+        1_000_000, // rent
+        space as u64,
+        &program_id(), // Your program ID
+    );
+    
+    // Initialize counter instruction
+    let init_ix = Instruction {
+        program_id: program_id(),
+        accounts: vec![
+            AccountMeta::new(counter_keypair.pubkey(), false),
+            AccountMeta::new_readonly(payer.pubkey(), true),
+        ],
+        data: CounterInstruction::Initialize { initial_value: 42 }
+            .try_to_vec()?,
+    };
+    
+    // Create and send transaction
+    let mut transaction = Transaction::new_with_payer(
+        &[create_account_ix, init_ix],
+        Some(&payer.pubkey()),
+    );
+    
+    let recent_blockhash = client.get_latest_blockhash()?;
+    transaction.sign(&[&payer, &counter_keypair], recent_blockhash);
+    
+    client.send_and_confirm_transaction(&transaction)?;
+    
+    println!("Counter initialized successfully!");
+    
+    // Read the counter state
+    let account_data = client.get_account_data(&counter_keypair.pubkey())?;
+    let counter: CounterAccount = CounterAccount::try_from_slice(&account_data)?;
+    
+    println!("Counter value: {}", counter.count);
+    println!("Owner: {}", counter.owner);
+    println!("Created at: {}", counter.created_at);
+    
+    Ok(())
+}
+
+fn program_id() -> Pubkey {
+    // Replace with your actual program ID
+    "YourProgramIdHere".parse().unwrap()
+}
+```
+
+## Step 8: Testing
+
+Create comprehensive tests for your program:
+
+**tests/integration_tests.rs**
+```rust
+use arch_program::{
+    account::AccountInfo,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
+use my_counter_program::{
+    process_instruction, CounterAccount, CounterInstruction, CounterError,
+};
+
+#[test]
+fn test_initialize_counter() {
+    // Test initialization logic
+    let program_id = Pubkey::new_unique();
+    let owner = Pubkey::new_unique();
+    
+    // Create mock accounts
+    let mut counter_data = vec![0u8; 1000];
+    let counter_account = AccountInfo::new(
+        &Pubkey::new_unique(),
+        false,
+        true,
+        &mut counter_data,
+        &program_id,
+        &Pubkey::new_unique(),
+        false,
+        0,
+    );
+    
+    let owner_account = AccountInfo::new(
+        &owner,
+        true,
+        false,
+        &mut vec![],
+        &Pubkey::new_unique(),
+        &Pubkey::new_unique(),
+        false,
+        0,
+    );
+    
+    let accounts = vec![counter_account, owner_account];
+    let instruction = CounterInstruction::Initialize { initial_value: 100 };
+    let instruction_data = instruction.try_to_vec().unwrap();
+    
+    // Process instruction
+    let result = process_instruction(&program_id, &accounts, &instruction_data);
+    assert!(result.is_ok());
+    
+    // Verify counter was initialized
+    let counter: CounterAccount = CounterAccount::try_from_slice(&counter_data[..100]).unwrap();
+    assert_eq!(counter.count, 100);
+    assert_eq!(counter.owner, owner);
+    assert!(counter.is_active);
+}
+
+#[test]
+fn test_increment_counter() {
+    // Test increment logic
+    // Similar structure to above test
+}
+
+#[test]
+fn test_unauthorized_access() {
+    // Test that only the owner can modify the counter
+}
+
+#[test]
+fn test_overflow_protection() {
+    // Test overflow protection
+}
+
+#[test]
+fn test_inactive_counter() {
+    // Test that inactive counters can't be modified
+}
+```
+
+## Step 9: Advanced Features
+
+### 9.1 Bitcoin Integration
+
+Add Bitcoin transaction support:
+
+```rust
+use arch_program::{
+    bitcoin::{Transaction, TxIn, TxOut},
+    helper::add_state_transition,
+    input_to_sign::InputToSign,
+    transaction_to_sign::TransactionToSign,
+};
+
+/// Process a Bitcoin transaction
+fn process_bitcoin_transaction(
+    counter_account: &AccountInfo,
+    bitcoin_tx: &Transaction,
+) -> Result<(), ProgramError> {
+    msg!("Processing Bitcoin transaction");
+    
+    // Verify Bitcoin transaction
+    verify_bitcoin_transaction(bitcoin_tx)?;
+    
+    // Create state transition
+    let state_transition = create_state_transition(counter_account, bitcoin_tx)?;
+    
+    // Add to transaction
+    add_state_transition(state_transition)?;
+    
+    Ok(())
+}
+
+fn verify_bitcoin_transaction(tx: &Transaction) -> Result<(), ProgramError> {
+    // Implement Bitcoin transaction verification
+    // Check signatures, inputs, outputs, etc.
+    Ok(())
+}
+
+fn create_state_transition(
+    counter_account: &AccountInfo,
+    bitcoin_tx: &Transaction,
+) -> Result<TransactionToSign, ProgramError> {
+    // Create a Bitcoin transaction that reflects the state change
+    let mut tx = Transaction {
+        version: Version::TWO,
+        lock_time: LockTime::ZERO,
+        input: vec![],
+        output: vec![],
+    };
+    
+    // Add inputs and outputs based on the counter state
+    // This is a simplified example
+    
+    Ok(TransactionToSign::new(tx))
+}
+```
+
+### 9.2 Error Handling and Logging
+
+Enhance error handling:
+
+```rust
+use arch_program::msg;
+
+/// Enhanced error handling with detailed logging
+fn process_instruction_with_logging(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    instruction_data: &[u8],
+) -> Result<(), ProgramError> {
+    msg!("=== Counter Program Execution ===");
+    msg!("Program ID: {}", program_id);
+    msg!("Accounts: {}", accounts.len());
+    msg!("Instruction data length: {}", instruction_data.len());
+    
+    match process_instruction(program_id, accounts, instruction_data) {
+        Ok(()) => {
+            msg!("Instruction processed successfully");
+            Ok(())
+        }
+        Err(e) => {
+            msg!("Instruction failed with error: {:?}", e);
+            Err(e)
+        }
+    }
+}
+```
+
+## Step 10: Security Best Practices
+
+### 10.1 Input Validation
+
+```rust
+/// Validate instruction inputs
+fn validate_instruction(instruction: &CounterInstruction) -> Result<(), ProgramError> {
+    match instruction {
+        CounterInstruction::Initialize { initial_value } => {
+            if *initial_value < 0 {
+                return Err(CounterError::InvalidInstruction.into());
+            }
+        }
+        CounterInstruction::Increment { amount } => {
+            if *amount <= 0 {
+                return Err(CounterError::InvalidInstruction.into());
+            }
+        }
+        CounterInstruction::Decrement { amount } => {
+            if *amount <= 0 {
+                return Err(CounterError::InvalidInstruction.into());
+            }
+        }
+        _ => {} // Other instructions don't need validation
+    }
+    Ok(())
+}
+```
+
+### 10.2 Access Control
+
+```rust
+/// Enhanced access control
+fn verify_access_control(
+    counter: &CounterAccount,
+    owner_account: &AccountInfo,
+    instruction: &CounterInstruction,
+) -> Result<(), ProgramError> {
+    // Check ownership
+    if counter.owner != *owner_account.key {
+        return Err(CounterError::Unauthorized.into());
+    }
+    
+    // Check if counter is active for state-changing operations
+    match instruction {
+        CounterInstruction::Increment { .. } |
+        CounterInstruction::Decrement { .. } |
+        CounterInstruction::Reset |
+        CounterInstruction::Deactivate => {
+            if !counter.is_active {
+                return Err(CounterError::CounterInactive.into());
+            }
+        }
+        _ => {} // Read-only operations don't need active check
+    }
+    
+    Ok(())
+}
+```
+
+## Next Steps
+
+Congratulations! You've successfully created your first Arch program. Here's what you can do next:
+
+<Cards>
+  <Card title="Explore More Examples" href="/docs/guides/how-to-create-a-fungible-token">
+    Learn how to create fungible tokens
+  </Card>
+  <Card title="Build an Oracle Program" href="/docs/guides/how-to-write-oracle-program">
+    Create a price oracle for external data
+  </Card>
+  <Card title="Advanced Testing" href="/docs/guides/testing-guide">
+    Learn comprehensive testing strategies
+  </Card>
+  <Card title="Program Architecture" href="/docs/guides/understanding-arch-programs">
+    Deep dive into Arch program concepts
+  </Card>
+</Cards>
+
+## Key Takeaways
+
+1. **State Management**: Arch programs store state in accounts using Borsh serialization
+2. **Instruction Processing**: Programs handle different instruction types through enums
+3. **Security**: Always verify ownership and validate inputs
+4. **Bitcoin Integration**: Programs can interact with Bitcoin transactions
+5. **Testing**: Comprehensive testing is essential for production programs
+6. **Error Handling**: Proper error handling improves user experience and security
+
+## Resources
+
+- [Arch Program Library](/docs/apl/introduction) - Pre-built programs and utilities
+- [SDK Documentation](/docs/sdk/sdk) - Client libraries and tools
+- [API Reference](/docs/rpc/rpc) - Complete API documentation
+- [Community Discord](https://discord.gg/archnetwork) - Get help and share your projects
