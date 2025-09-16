@@ -2,214 +2,47 @@
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
 
-/* Arch Network Professional Theme */
+/* Arch Network Theme Colors */
 :root {
-  /* Primary Arch Network Colors */
-  --arch-primary: #4E3AF1;
-  --arch-primary-light: #6B4FF2;
-  --arch-primary-dark: #3d2bc7;
-  --arch-primary-foreground: #ffffff;
-  
-  /* Professional Color Palette */
-  --arch-accent: #00D4AA;
-  --arch-accent-foreground: #ffffff;
-  --arch-warning: #FFB800;
-  --arch-warning-foreground: #000000;
-  --arch-error: #FF4757;
-  --arch-error-foreground: #ffffff;
-  
-  /* Neutral Colors for Better Contrast */
-  --arch-text-primary: #1a1a1a;
-  --arch-text-secondary: #4a4a4a;
-  --arch-text-muted: #6b7280;
-  --arch-bg-primary: #ffffff;
-  --arch-bg-secondary: #f8fafc;
-  --arch-border: #e2e8f0;
+  --fd-primary: #4E3AF1;
+  --fd-primary-foreground: #ffffff;
+  --fd-primary-hover: #3d2bc7;
+  --fd-accent: #4E3AF1;
+  --fd-accent-foreground: #ffffff;
 }
 
-/* Dark Theme Variables */
+/* Override Fumadocs default colors with Arch Network theme */
+[data-theme="light"] {
+  --fd-primary: #4E3AF1;
+  --fd-primary-foreground: #ffffff;
+  --fd-accent: #4E3AF1;
+  --fd-accent-foreground: #ffffff;
+}
+
 [data-theme="dark"] {
-  --arch-text-primary: #ffffff;
-  --arch-text-secondary: #e2e8f0;
-  --arch-text-muted: #94a3b8;
-  --arch-bg-primary: #0f172a;
-  --arch-bg-secondary: #1e293b;
-  --arch-border: #334155;
+  --fd-primary: #4E3AF1;
+  --fd-primary-foreground: #ffffff;
+  --fd-accent: #4E3AF1;
+  --fd-accent-foreground: #ffffff;
 }
 
-/* Override Fumadocs with Arch Network Theme */
-:root {
-  --fd-primary: var(--arch-primary);
-  --fd-primary-foreground: var(--arch-primary-foreground);
-  --fd-accent: var(--arch-accent);
-  --fd-accent-foreground: var(--arch-accent-foreground);
+/* Custom button and link styles */
+.fd-primary {
+  background-color: var(--fd-primary);
+  color: var(--fd-primary-foreground);
 }
 
-/* Professional Link Styling */
-.content a,
-.content a:link,
-.content a:visited {
-  color: var(--arch-primary);
-  text-decoration: none;
-  font-weight: 500;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s ease;
-  padding: 2px 0;
+.fd-primary:hover {
+  background-color: var(--fd-primary-hover);
 }
 
-.content a:hover,
-.content a:active {
-  color: var(--arch-primary-dark);
-  border-bottom-color: var(--arch-primary);
-  background: linear-gradient(120deg, rgba(78, 58, 241, 0.1) 0%, rgba(78, 58, 241, 0.05) 100%);
-  border-radius: 4px;
-  padding: 2px 4px;
-  margin: 0 -4px;
-}
-
-/* Navigation and Sidebar Styling */
+/* Navigation and sidebar accent colors */
 nav a[data-active="true"],
 .sidebar a[data-active="true"] {
-  color: var(--arch-primary);
-  background: linear-gradient(120deg, rgba(78, 58, 241, 0.1) 0%, rgba(78, 58, 241, 0.05) 100%);
-  border-radius: 6px;
-  font-weight: 600;
+  color: var(--fd-primary);
 }
 
-/* Button Styling */
-.fd-primary,
-button[class*="fd-primary"] {
-  background: linear-gradient(135deg, var(--arch-primary) 0%, var(--arch-primary-dark) 100%);
-  color: var(--arch-primary-foreground);
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(78, 58, 241, 0.3);
-  transition: all 0.2s ease;
-}
-
-.fd-primary:hover,
-button[class*="fd-primary"]:hover {
-  background: linear-gradient(135deg, var(--arch-primary-dark) 0%, var(--arch-primary) 100%);
-  box-shadow: 0 6px 20px rgba(78, 58, 241, 0.4);
-  transform: translateY(-1px);
-}
-
-/* Code Block Styling */
-pre {
-  background: var(--arch-bg-secondary);
-  border: 1px solid var(--arch-border);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-code {
-  background: var(--arch-bg-secondary);
-  color: var(--arch-primary);
-  border: 1px solid var(--arch-border);
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-/* Info Boxes and Callouts */
-.info {
-  background: linear-gradient(120deg, rgba(78, 58, 241, 0.05) 0%, rgba(78, 58, 241, 0.02) 100%);
-  border-left: 4px solid var(--arch-primary);
-  border-radius: 0 8px 8px 0;
-  padding: 1rem 1.5rem;
-  margin: 1.5rem 0;
-  color: var(--arch-text-primary);
-}
-
-.tip {
-  background: linear-gradient(120deg, rgba(0, 212, 170, 0.05) 0%, rgba(0, 212, 170, 0.02) 100%);
-  border-left: 4px solid var(--arch-accent);
-  border-radius: 0 8px 8px 0;
-  padding: 1rem 1.5rem;
-  margin: 1.5rem 0;
-  color: var(--arch-text-primary);
-}
-
-.warning {
-  background: linear-gradient(120deg, rgba(255, 184, 0, 0.05) 0%, rgba(255, 184, 0, 0.02) 100%);
-  border-left: 4px solid var(--arch-warning);
-  border-radius: 0 8px 8px 0;
-  padding: 1rem 1.5rem;
-  margin: 1.5rem 0;
-  color: var(--arch-text-primary);
-}
-
-/* Card and Component Styling */
-.card,
-.component-box {
-  background: var(--arch-bg-primary);
-  border: 1px solid var(--arch-border);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-}
-
-.card:hover,
-.component-box:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-/* Search Bar Styling */
-[data-search] {
-  background: var(--arch-bg-primary);
-  border: 2px solid var(--arch-border);
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-[data-search]:focus {
-  border-color: var(--arch-primary);
-  box-shadow: 0 0 0 3px rgba(78, 58, 241, 0.1);
-}
-
-/* Table Styling */
-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 1.5rem 0;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-th {
-  background: var(--arch-primary);
-  color: var(--arch-primary-foreground);
-  padding: 1rem;
-  font-weight: 600;
-  text-align: left;
-}
-
-td {
-  padding: 1rem;
-  border-bottom: 1px solid var(--arch-border);
-  color: var(--arch-text-primary);
-}
-
-tr:hover {
-  background: var(--arch-bg-secondary);
-}
-
-/* Dark mode specific adjustments */
-[data-theme="dark"] .content a:hover,
-[data-theme="dark"] .content a:active {
-  background: linear-gradient(120deg, rgba(78, 58, 241, 0.2) 0%, rgba(78, 58, 241, 0.1) 100%);
-}
-
-[data-theme="dark"] pre {
-  background: var(--arch-bg-secondary);
-  border-color: var(--arch-border);
-}
-
-[data-theme="dark"] code {
-  background: var(--arch-bg-secondary);
-  border-color: var(--arch-border);
+/* Link hover effects */
+a:hover {
+  color: var(--fd-primary);
 }
