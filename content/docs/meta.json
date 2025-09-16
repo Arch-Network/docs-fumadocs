@@ -34,14 +34,16 @@
         "guides/writing-your-first-program",
         "guides/how-to-create-a-fungible-token",
         "guides/how-to-write-oracle-program",
-        "guides/how-to-build-runes-swap"
+        "guides/how-to-build-runes-swap",
+        "guides/how-to-build-lending-protocol"
       ]
     },
     {
       "title": "APL (Arch Program Library)",
       "pages": [
         "apl/introduction",
-        "apl/token-program"
+        "apl/token-program",
+        "apl/associated-token-account"
       ]
     },
     {

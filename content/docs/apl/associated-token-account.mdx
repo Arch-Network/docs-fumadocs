@@ -1,0 +1,517 @@
+---
+title: "Associated Token Account Program"
+description: "Complete guide to the APL Associated Token Account Program for deterministic token account management"
+---
+
+The Associated Token Account (ATA) Program is a utility program in the APL that standardizes the creation and management of token accounts. It provides a deterministic way to find and create token accounts for any wallet address and token mint combination.
+
+## Overview
+
+The Associated Token Account Program enables:
+- **Deterministic derivation of token account addresses**
+- **Automatic token account creation**
+- **Standardized account management**
+- **Simplified token operations**
+
+## Program ID
+
+```text
+associated-token-account00000000
+```
+
+You can get the program ID in code:
+```rust
+let program_id = apl_associated_token_account::id();
+```
+
+## Core Concepts
+
+### Associated Token Accounts
+
+An Associated Token Account is a Program Derived Address (PDA) that is deterministically derived from:
+- The wallet owner's public key
+- The token mint address
+
+This ensures that:
+1. **Each wallet can have exactly one associated token account per token mint**
+2. **The account address can be derived by anyone who knows the wallet and mint addresses**
+3. **The account ownership and permissions are standardized**
+
+### Account Structure
+
+The Associated Token Account follows the standard Token Account structure but with additional guarantees about its address derivation and ownership.
+
+### How It Works
+
+1. **Address Derivation**: Given a wallet and token mint, the ATA address is derived deterministically
+2. **Account Creation**: If the account doesn't exist, it can be created by calling the ATA program
+3. **Token Operations**: Once created, the ATA works like any other token account for transfers, approvals, etc.
+
+The key advantage is that applications can always find a user's token account for any mint without needing to store addresses.
+
+### Key Functions
+
+The main function for working with Associated Token Accounts:
+
+```rust
+// Derive address and bump seed
+let (address, bump_seed) = apl_associated_token_account::get_associated_token_address_and_bump_seed(
+    &wallet_pubkey,
+    &token_mint_pubkey,
+    &apl_associated_token_account::id(),
+);
+```
+
+## Instructions
+
+### Create Associated Token Account
+
+Creates a new associated token account for a wallet and token mint combination.
+
+**Required accounts:**
+- `[signer]` Funding account (pays for account creation)
+- `[writable]` New associated token account
+- `[]` Wallet address (account owner)
+- `[]` Token mint
+- `[]` System program
+- `[]` Token program
+
+**Example:**
+```rust
+// Derive the associated token account address
+let (associated_token_address, _bump_seed) = 
+    apl_associated_token_account::get_associated_token_address_and_bump_seed(
+        &wallet_address,
+        &token_mint,
+        &apl_associated_token_account::id(),
+    );
+
+// Create instruction to create the associated token account
+let instruction = arch_program::instruction::Instruction {
+    program_id: apl_associated_token_account::id(),
+    accounts: vec![
+        arch_program::account::AccountMeta::new(payer_pubkey, true),
+        arch_program::account::AccountMeta::new(associated_token_address, false),
+        arch_program::account::AccountMeta::new(wallet_address, false),
+        arch_program::account::AccountMeta::new_readonly(token_mint, false),
+        arch_program::account::AccountMeta::new_readonly(arch_program::system_program::id(), false),
+        arch_program::account::AccountMeta::new_readonly(apl_token::id(), false),
+    ],
+    data: utxo_data, // UTXO data for account creation
+};
+```
+
+## Best Practices
+
+### Account Management
+
+1. **Creation**
+   - Always check if the account exists before creating
+   - Use the deterministic derivation function
+   - Handle creation errors gracefully
+
+2. **Address Derivation**
+   - Use the official derivation function
+   - Store the bump seed for future reference
+   - Validate derived addresses
+
+3. **Error Handling**
+   - Check for account existence
+   - Handle insufficient funds for creation
+   - Validate account ownership
+
+### Security Considerations
+
+1. **Address Validation**
+   - Always verify derived addresses
+   - Check account ownership before operations
+   - Validate mint addresses
+
+2. **Access Control**
+   - Ensure proper authority for account creation
+   - Validate wallet ownership
+   - Check token program compatibility
+
+## Usage Examples
+
+### Basic ATA Creation
+
+```rust
+use arch_sdk::prelude::*;
+use apl_associated_token_account::prelude::*;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Connect to Arch Network
+    let client = ArchNetworkClient::new("http://localhost:9002").await?;
+    
+    // Create keypairs
+    let wallet = Keypair::new();
+    let payer = Keypair::new();
+    let token_mint = Pubkey::new_unique();
+    
+    // Derive the associated token account address
+    let (ata_address, bump_seed) = get_associated_token_address_and_bump_seed(
+        &wallet.pubkey(),
+        &token_mint,
+        &apl_associated_token_account::id(),
+    );
+    
+    // Create the associated token account
+    let instruction = create_associated_token_account(
+        &payer.pubkey(),
+        &wallet.pubkey(),
+        &token_mint,
+        &apl_token::id(),
+    );
+    
+    // Send transaction
+    let transaction = Transaction::new()
+        .add_instruction(instruction);
+    
+    let signature = client.send_transaction(transaction, &[&payer]).await?;
+    println!("ATA created: {}", signature);
+    
+    Ok(())
+}
+```
+
+### Check ATA Existence
+
+```rust
+async fn check_ata_exists(
+    client: &ArchNetworkClient,
+    wallet: &Pubkey,
+    mint: &Pubkey,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    // Derive the ATA address
+    let (ata_address, _) = get_associated_token_address_and_bump_seed(
+        wallet,
+        mint,
+        &apl_associated_token_account::id(),
+    );
+    
+    // Check if account exists
+    match client.get_account_info(&ata_address).await {
+        Ok(Some(_)) => Ok(true),
+        Ok(None) => Ok(false),
+        Err(_) => Ok(false),
+    }
+}
+```
+
+### Create ATA if Not Exists
+
+```rust
+async fn create_ata_if_not_exists(
+    client: &ArchNetworkClient,
+    wallet: &Pubkey,
+    mint: &Pubkey,
+    payer: &Keypair,
+) -> Result<Pubkey, Box<dyn std::error::Error>> {
+    // Derive the ATA address
+    let (ata_address, _) = get_associated_token_address_and_bump_seed(
+        wallet,
+        mint,
+        &apl_associated_token_account::id(),
+    );
+    
+    // Check if account exists
+    if !check_ata_exists(client, wallet, mint).await? {
+        // Create the ATA
+        let instruction = create_associated_token_account(
+            &payer.pubkey(),
+            wallet,
+            mint,
+            &apl_token::id(),
+        );
+        
+        let transaction = Transaction::new()
+            .add_instruction(instruction);
+        
+        client.send_transaction(transaction, &[payer]).await?;
+    }
+    
+    Ok(ata_address)
+}
+```
+
+## CLI Usage
+
+### Create Associated Token Account
+
+```bash
+# Create an associated token account
+arch-cli token create-associated-account \
+  --wallet <WALLET_ADDRESS> \
+  --mint <MINT_ADDRESS> \
+  --keypair-path ~/payer.key
+```
+
+### Get Associated Token Account Address
+
+```bash
+# Get the associated token account address
+arch-cli token get-associated-account-address \
+  --wallet <WALLET_ADDRESS> \
+  --mint <MINT_ADDRESS>
+```
+
+## Integration with Token Program
+
+### Transfer to ATA
+
+```rust
+async fn transfer_to_ata(
+    client: &ArchNetworkClient,
+    source: &Pubkey,
+    destination_wallet: &Pubkey,
+    mint: &Pubkey,
+    amount: u64,
+    owner: &Keypair,
+    payer: &Keypair,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Ensure destination ATA exists
+    let destination_ata = create_ata_if_not_exists(
+        client,
+        destination_wallet,
+        mint,
+        payer,
+    ).await?;
+    
+    // Transfer tokens
+    let transfer_instruction = apl_token::instruction::transfer(
+        &apl_token::id(),
+        source,
+        &destination_ata,
+        &owner.pubkey(),
+        &[],
+        amount,
+    )?;
+    
+    let transaction = Transaction::new()
+        .add_instruction(transfer_instruction);
+    
+    client.send_transaction(transaction, &[owner, payer]).await?;
+    
+    Ok(())
+}
+```
+
+### Mint to ATA
+
+```rust
+async fn mint_to_ata(
+    client: &ArchNetworkClient,
+    mint: &Pubkey,
+    destination_wallet: &Pubkey,
+    amount: u64,
+    mint_authority: &Keypair,
+    payer: &Keypair,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Ensure destination ATA exists
+    let destination_ata = create_ata_if_not_exists(
+        client,
+        destination_wallet,
+        mint,
+        payer,
+    ).await?;
+    
+    // Mint tokens
+    let mint_instruction = apl_token::instruction::mint_to(
+        &apl_token::id(),
+        mint,
+        &destination_ata,
+        &mint_authority.pubkey(),
+        &[],
+        amount,
+    )?;
+    
+    let transaction = Transaction::new()
+        .add_instruction(mint_instruction);
+    
+    client.send_transaction(transaction, &[mint_authority, payer]).await?;
+    
+    Ok(())
+}
+```
+
+## Advanced Patterns
+
+### Batch ATA Creation
+
+```rust
+async fn create_multiple_atas(
+    client: &ArchNetworkClient,
+    wallet: &Pubkey,
+    mints: &[Pubkey],
+    payer: &Keypair,
+) -> Result<Vec<Pubkey>, Box<dyn std::error::Error>> {
+    let mut instructions = Vec::new();
+    let mut ata_addresses = Vec::new();
+    
+    for mint in mints {
+        let (ata_address, _) = get_associated_token_address_and_bump_seed(
+            wallet,
+            mint,
+            &apl_associated_token_account::id(),
+        );
+        
+        // Check if ATA exists
+        if !check_ata_exists(client, wallet, mint).await? {
+            let instruction = create_associated_token_account(
+                &payer.pubkey(),
+                wallet,
+                mint,
+                &apl_token::id(),
+            );
+            instructions.push(instruction);
+        }
+        
+        ata_addresses.push(ata_address);
+    }
+    
+    // Send batch transaction
+    if !instructions.is_empty() {
+        let transaction = Transaction::new()
+            .add_instructions(instructions);
+        
+        client.send_transaction(transaction, &[payer]).await?;
+    }
+    
+    Ok(ata_addresses)
+}
+```
+
+### ATA with Custom Program
+
+```rust
+async fn create_ata_with_custom_program(
+    client: &ArchNetworkClient,
+    wallet: &Pubkey,
+    mint: &Pubkey,
+    custom_program: &Pubkey,
+    payer: &Keypair,
+) -> Result<Pubkey, Box<dyn std::error::Error>> {
+    // Derive ATA address for custom program
+    let (ata_address, _) = get_associated_token_address_and_bump_seed(
+        wallet,
+        mint,
+        custom_program,
+    );
+    
+    // Create instruction with custom program
+    let instruction = create_associated_token_account(
+        &payer.pubkey(),
+        wallet,
+        mint,
+        custom_program,
+    );
+    
+    let transaction = Transaction::new()
+        .add_instruction(instruction);
+    
+    client.send_transaction(transaction, &[payer]).await?;
+    
+    Ok(ata_address)
+}
+```
+
+## Error Handling
+
+### Common Errors
+
+| Error | Description | Solution |
+|-------|-------------|----------|
+| `AccountAlreadyExists` | ATA already exists | Check existence before creation |
+| `InvalidMint` | Invalid token mint | Validate mint address |
+| `InvalidOwner` | Invalid wallet owner | Check wallet address |
+| `InsufficientFunds` | Not enough for account creation | Fund the payer account |
+
+### Error Handling Example
+
+```rust
+async fn safe_create_ata(
+    client: &ArchNetworkClient,
+    wallet: &Pubkey,
+    mint: &Pubkey,
+    payer: &Keypair,
+) -> Result<Option<Pubkey>, Box<dyn std::error::Error>> {
+    // Derive ATA address
+    let (ata_address, _) = get_associated_token_address_and_bump_seed(
+        wallet,
+        mint,
+        &apl_associated_token_account::id(),
+    );
+    
+    // Check if already exists
+    if check_ata_exists(client, wallet, mint).await? {
+        return Ok(Some(ata_address));
+    }
+    
+    // Try to create
+    match create_ata_if_not_exists(client, wallet, mint, payer).await {
+        Ok(address) => Ok(Some(address)),
+        Err(e) => {
+            eprintln!("Failed to create ATA: {}", e);
+            Ok(None)
+        }
+    }
+}
+```
+
+## Best Practices
+
+### 1. Address Management
+- Always use the official derivation function
+- Store derived addresses for future reference
+- Validate addresses before use
+
+### 2. Account Creation
+- Check existence before creating
+- Handle creation errors gracefully
+- Use batch operations when possible
+
+### 3. Integration
+- Integrate with token operations seamlessly
+- Use ATA for all user-facing token operations
+- Implement proper error handling
+
+### 4. Performance
+- Batch ATA creation when possible
+- Cache derived addresses
+- Minimize account creation calls
+
+## Next Steps
+
+<Cards>
+  <Card title="Token Program" href="/docs/apl/token-program">
+    Learn about the APL Token Program
+  </Card>
+  <Card title="Token Creation Guide" href="/docs/guides/how-to-create-a-fungible-token">
+    Create your first token with ATA
+  </Card>
+  <Card title="SDK Reference" href="/docs/sdk/sdk">
+    Use SDKs for easier integration
+  </Card>
+  <Card title="CLI Reference" href="/docs/guides/arch-cli-reference">
+    Use CLI for ATA operations
+  </Card>
+</Cards>
+
+## Resources
+
+<Cards>
+  <Card title="APL Source Code" href="https://github.com/Arch-Network/apl" external>
+    View the complete source code
+  </Card>
+  <Card title="Token Program" href="/docs/apl/token-program">
+    Complete APL Token Program reference
+  </Card>
+  <Card title="Arch Examples" href="https://github.com/Arch-Network/arch-examples" external>
+    Example implementations
+  </Card>
+  <Card title="Community Discord" href="https://discord.gg/archnetwork" external>
+    Get help from the community
+  </Card>
+</Cards>
