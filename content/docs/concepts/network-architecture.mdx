@@ -1,0 +1,447 @@
+---
+title: "Network Architecture"
+description: "Understanding Arch Network's distributed system architecture and node interactions"
+---
+
+Arch Network operates as a distributed system with different types of nodes working together to provide secure and efficient program execution on Bitcoin. This document details the network's architecture and how different components interact.
+
+## Network Overview
+
+```mermaid
+flowchart TB
+    subgraph Core["Core Components"]
+        direction TB
+        BN[Bitcoin Network]
+        Boot[Bootnode]
+    end
+
+    subgraph Leader["Leader Node Services"]
+        direction LR
+        TC[Transaction<br/>Coordination]
+        MS[MultiSig<br/>Aggregation]
+    end
+    
+    subgraph Validators["Validator Network"]
+        direction TB
+        V1[Validator 1]
+        V2[Validator 2]
+        V3[Validator 3]
+        VN[Validator N]
+    end
+
+    BN --> LN[Leader Node]
+    Boot --> LN
+    
+    LN --> TC
+    LN --> MS
+    
+    LN --> V1
+    LN --> V2
+    LN --> V3
+    LN --> VN
+
+    %% Styling
+    classDef core fill:#e1f5fe,stroke:#01579b
+    classDef leader fill:#fff3e0,stroke:#e65100
+    classDef validators fill:#f3e5f5,stroke:#4a148c
+    
+    class BN,Boot core
+    class TC,MS leader
+    class V1,V2,V3,VN validators
+```
+
+## Node Types
+
+### 1. Bootnode
+
+The bootnode serves as the network's entry point, similar to DNS seeds in Bitcoin:
+- Handles initial network discovery
+- Maintains whitelist of valid validators
+- Coordinates peer connections
+- Manages network topology
+
+```mermaid
+flowchart LR
+    subgraph Bootnode["Bootnode Services"]
+        direction TB
+        PR[Peer Registry]
+        WL[Validator Whitelist]
+    end
+
+    NN[New Node]
+    VN[Validator Network]
+
+    %% Connections
+    NN <--> PR
+    PR <--> VN
+    WL -.-> PR
+
+    %% Styling
+    classDef bootnode fill:#e1f5fe,stroke:#01579b
+    classDef external fill:#f5f5f5,stroke:#333
+    classDef connection stroke-width:2px
+    
+    class PR,WL bootnode
+    class NN,VN external
+```
+
+Configuration:
+```bash
+cargo run -p bootnode -- \
+    --network-mode localnet \
+    --p2p-bind-port 19001 \
+    --leader-peer-id "<LEADER_ID>" \
+    --validator-whitelist "<VALIDATOR_IDS>"
+```
+
+### 2. Leader Node
+
+The leader node coordinates transaction processing and Bitcoin integration:
+
+```mermaid
+flowchart TB
+    %% Main Components
+    BN[Bitcoin Network]
+    LN[Leader Node]
+    
+    %% Leader Services
+    subgraph LS["Leader Services"]
+        direction TB
+        TC[Transaction<br/>Coordinator]
+        MS[MultiSig<br/>Aggregator]
+        BC[Bitcoin<br/>Connector]
+    end
+    
+    %% Validator Network
+    subgraph VN["Validator Network"]
+        direction TB
+        V1[Validator 1]
+        V2[Validator 2]
+        V3[Validator 3]
+    end
+    
+    %% Connections
+    BN <--> BC
+    BC --> TC
+    TC --> MS
+    MS --> V1
+    MS --> V2
+    MS --> V3
+    
+    %% Styling
+    classDef leader fill:#fff3e0,stroke:#e65100
+    classDef bitcoin fill:#ffd700,stroke:#f4c430
+    classDef validators fill:#f3e5f5,stroke:#4a148c
+    
+    class TC,MS,BC leader
+    class BN bitcoin
+    class V1,V2,V3 validators
+```
+
+Key responsibilities:
+- **Transaction Coordination**: Manages transaction flow and validation
+- **MultiSig Aggregation**: Collects and aggregates threshold signatures
+- **Bitcoin Integration**: Handles Bitcoin RPC communication
+- **Network Management**: Coordinates with validators and bootnode
+
+### 3. Validator Nodes
+
+Validator nodes execute programs and participate in consensus:
+
+```mermaid
+flowchart TB
+    subgraph VN["Validator Node"]
+        direction TB
+        PE[Program<br/>Executor]
+        CS[Consensus<br/>Service]
+        SM[State<br/>Manager]
+    end
+    
+    subgraph AN["Arch VM"]
+        direction TB
+        VM[Virtual<br/>Machine]
+        SC[System<br/>Calls]
+    end
+    
+    subgraph LN["Leader Node"]
+        direction TB
+        TC[Transaction<br/>Coordinator]
+    end
+    
+    %% Connections
+    TC --> PE
+    PE --> VM
+    VM --> SC
+    SC --> SM
+    SM --> CS
+    CS --> TC
+    
+    %% Styling
+    classDef validator fill:#f3e5f5,stroke:#4a148c
+    classDef vm fill:#e8f5e8,stroke:#2e7d32
+    classDef leader fill:#fff3e0,stroke:#e65100
+    
+    class PE,CS,SM validator
+    class VM,SC vm
+    class TC leader
+```
+
+Validator responsibilities:
+- **Program Execution**: Run smart contracts in the Arch VM
+- **State Management**: Maintain program and account state
+- **Consensus Participation**: Contribute to threshold signatures
+- **Transaction Validation**: Verify transaction integrity
+
+## Network Communication
+
+### Message Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Leader
+    participant Validator1
+    participant Validator2
+    participant Validator3
+    participant Bitcoin
+    
+    Client->>Leader: Submit Transaction
+    Leader->>Validator1: Distribute Transaction
+    Leader->>Validator2: Distribute Transaction
+    Leader->>Validator3: Distribute Transaction
+    
+    Validator1->>Validator1: Execute Program
+    Validator2->>Validator2: Execute Program
+    Validator3->>Validator3: Execute Program
+    
+    Validator1->>Leader: Return Result + Signature
+    Validator2->>Leader: Return Result + Signature
+    Validator3->>Leader: Return Result + Signature
+    
+    Leader->>Leader: Aggregate Signatures
+    Leader->>Bitcoin: Submit Bitcoin Transaction
+    Bitcoin-->>Leader: Transaction Confirmed
+    Leader-->>Client: Transaction Complete
+```
+
+### Protocol Stack
+
+```mermaid
+graph TB
+    subgraph Application["Application Layer"]
+        direction TB
+        Apps[Arch Programs]
+        SDK[Client SDKs]
+    end
+    
+    subgraph Consensus["Consensus Layer"]
+        direction TB
+        ROAST[ROAST Protocol]
+        FROST[FROST Signatures]
+        DKG[Distributed Key Generation]
+    end
+    
+    subgraph Network["Network Layer"]
+        direction TB
+        P2P[P2P Networking]
+        RPC[RPC Interface]
+        Discovery[Peer Discovery]
+    end
+    
+    subgraph Bitcoin["Bitcoin Layer"]
+        direction TB
+        UTXO[UTXO Management]
+        RPC_BTC[Bitcoin RPC]
+        Titan[Titan Indexer]
+    end
+    
+    %% Connections
+    Apps --> ROAST
+    SDK --> RPC
+    ROAST --> FROST
+    FROST --> DKG
+    DKG --> P2P
+    P2P --> Discovery
+    RPC --> UTXO
+    UTXO --> RPC_BTC
+    RPC_BTC --> Titan
+    
+    %% Styling
+    classDef app fill:#e3f2fd,stroke:#1976d2
+    classDef consensus fill:#f3e5f5,stroke:#7b1fa2
+    classDef network fill:#e8f5e8,stroke:#388e3c
+    classDef bitcoin fill:#fff3e0,stroke:#f57c00
+    
+    class Apps,SDK app
+    class ROAST,FROST,DKG consensus
+    class P2P,RPC,Discovery network
+    class UTXO,RPC_BTC,Titan bitcoin
+```
+
+## Security Model
+
+### Multi-Layer Security
+
+Arch Network implements security at multiple layers:
+
+1. **Bitcoin Security**: Leverages Bitcoin's proven security guarantees
+2. **Threshold Signatures**: No single validator can compromise the system
+3. **Network Security**: Authenticated peer-to-peer communication
+4. **Program Security**: Sandboxed execution environment
+
+### Threat Model
+
+```mermaid
+graph TD
+    subgraph Threats["Potential Threats"]
+        direction TB
+        T1[Malicious Validators]
+        T2[Network Attacks]
+        T3[Bitcoin Attacks]
+        T4[Program Vulnerabilities]
+    end
+    
+    subgraph Defenses["Defense Mechanisms"]
+        direction TB
+        D1[Threshold Signatures]
+        D2[Peer Authentication]
+        D3[Bitcoin Finality]
+        D4[VM Sandboxing]
+    end
+    
+    subgraph Network["Arch Network"]
+        direction TB
+        V[Validators]
+        L[Leader]
+        B[Bitcoin]
+    end
+    
+    %% Threat connections
+    T1 -.-> V
+    T2 -.-> L
+    T3 -.-> B
+    T4 -.-> V
+    
+    %% Defense connections
+    D1 --> V
+    D2 --> L
+    D3 --> B
+    D4 --> V
+    
+    %% Styling
+    classDef threat fill:#ffebee,stroke:#c62828
+    classDef defense fill:#e8f5e8,stroke:#2e7d32
+    classDef network fill:#e3f2fd,stroke:#1976d2
+    
+    class T1,T2,T3,T4 threat
+    class D1,D2,D3,D4 defense
+    class V,L,B network
+```
+
+## Performance Characteristics
+
+### Scalability
+
+- **Horizontal Scaling**: Add more validators for increased throughput
+- **Parallel Processing**: Multiple transactions processed simultaneously
+- **Efficient State Management**: Optimized data structures for fast access
+- **Network Optimization**: Efficient peer-to-peer communication
+
+### Throughput
+
+- **High TPS**: Optimized for high transaction throughput
+- **Low Latency**: Fast transaction confirmation
+- **Batch Processing**: Efficient handling of multiple operations
+- **Resource Management**: Compute budget optimization
+
+### Reliability
+
+- **Fault Tolerance**: Continues operation despite node failures
+- **Recovery**: Automatic recovery from network partitions
+- **Audit Trail**: Complete transaction history and state changes
+- **Monitoring**: Real-time performance and health monitoring
+
+## Network Configuration
+
+### Development Network
+
+```bash
+# Start local development network
+arch-cli orchestrate start
+
+# Services:
+# - Bitcoin Core: http://127.0.0.1:18443
+# - Titan API: http://127.0.0.1:8080
+# - Validator RPC: http://127.0.0.1:9002
+```
+
+### Testnet Configuration
+
+```bash
+# Configure for testnet
+arch-cli config create-profile testnet \
+    --bitcoin-node-endpoint http://bitcoin-node.test.aws.archnetwork.xyz:49332 \
+    --bitcoin-network testnet \
+    --arch-node-url http://localhost:9002
+```
+
+### Production Network
+
+Production network configuration will be available when mainnet launches.
+
+## Monitoring and Telemetry
+
+### Health Checks
+
+```bash
+# Check validator health
+curl http://localhost:9002/health
+
+# Check Bitcoin connection
+bitcoin-cli -regtest getblockchaininfo
+
+# Check Titan status
+curl http://localhost:8080/health
+```
+
+### Metrics
+
+Key metrics to monitor:
+- **Transaction Throughput**: Transactions per second
+- **Block Production**: Block generation rate
+- **Network Latency**: Message propagation time
+- **Validator Participation**: Active validator count
+- **Bitcoin Sync**: Bitcoin blockchain synchronization status
+
+## Network Maintenance
+
+### Validator Management
+
+- **Adding Validators**: Update whitelist and restart network
+- **Removing Validators**: Graceful removal with state migration
+- **Validator Updates**: Rolling updates with minimal downtime
+- **Key Rotation**: Regular DKG sessions for security
+
+### Network Upgrades
+
+- **Protocol Upgrades**: Coordinated network-wide updates
+- **Feature Rollouts**: Gradual feature deployment
+- **Backward Compatibility**: Maintain compatibility with older versions
+- **Emergency Procedures**: Rapid response to critical issues
+
+## Next Steps
+
+<Cards>
+  <Card title="Bitcoin Integration" href="/docs/concepts/bitcoin-integration">
+    Learn how Arch integrates with Bitcoin
+  </Card>
+  <Card title="Consensus Mechanism" href="/docs/concepts/consensus">
+    Understand ROAST and FROST consensus
+  </Card>
+  <Card title="Validator Setup" href="/docs/getting-started/bitcoin-and-titan-setup">
+    Set up your own validator node
+  </Card>
+  <Card title="Program Development" href="/docs/guides/writing-your-first-program">
+    Start building Arch programs
+  </Card>
+</Cards>

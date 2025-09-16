@@ -14,7 +14,9 @@
       "pages": [
         "getting-started/quick-start",
         "getting-started/bitcoin-and-titan-setup",
-        "getting-started/requirements"
+        "getting-started/requirements",
+        "getting-started/faq",
+        "getting-started/resources"
       ]
     },
     {
@@ -22,7 +24,8 @@
       "pages": [
         "concepts/architecture",
         "concepts/bitcoin-integration",
-        "concepts/consensus"
+        "concepts/consensus",
+        "concepts/network-architecture"
       ]
     },
     {

@@ -1,0 +1,176 @@
+---
+title: "FAQ"
+description: "Frequently asked questions about Arch Network development"
+---
+
+# FAQ
+
+## General Questions
+
+### What is Arch Network?
+
+Arch Network is a Bitcoin-native computation environment that enables smart contracts and decentralized applications while maintaining direct integration with Bitcoin's security model. Unlike Layer 2 solutions, Arch Network provides a native computation layer that works directly with Bitcoin UTXOs.
+
+### How is Arch Network different from other blockchain platforms?
+
+Arch Network is unique because it:
+- **Bitcoin-Native**: Direct integration with Bitcoin's UTXO model
+- **No Token Required**: Uses Bitcoin for transaction fees and security
+- **Threshold Signatures**: Uses ROAST/FROST consensus for security
+- **Programmable**: Supports smart contracts written in Rust
+- **Scalable**: Efficient state management and parallel processing
+
+### What programming languages are supported?
+
+Currently, Arch Network supports:
+- **Rust**: Primary language for smart contract development
+- **TypeScript/JavaScript**: For client applications and SDK usage
+- **Future**: Additional languages may be added based on community demand
+
+## Development Questions
+
+### How do I get started with Arch Network development?
+
+1. **Install Prerequisites**: Rust, Solana CLI, Arch CLI, and Docker
+2. **Set up Local Environment**: Use `arch-cli orchestrate start` for automated setup
+3. **Write Your First Program**: Follow our [Writing Your First Program guide](/docs/guides/writing-your-first-program)
+4. **Deploy and Test**: Use the local validator for testing
+
+### What tools do I need for development?
+
+Essential tools:
+- **Rust**: For smart contract development
+- **Solana CLI**: For program compilation
+- **Arch CLI**: For deployment and testing
+- **Docker**: For running the complete stack locally
+- **VS Code**: Recommended IDE with Rust extensions
+
+### How do I test my programs?
+
+You can test your programs using:
+- **Local Validator**: Run `arch-cli orchestrate start` for a complete local environment
+- **Unit Tests**: Write Rust tests for your program logic
+- **Integration Tests**: Test with the full validator stack
+- **Client Applications**: Build TypeScript/JavaScript clients
+
+## Technical Questions
+
+### How does Arch Network integrate with Bitcoin?
+
+Arch Network integrates with Bitcoin through:
+- **UTXO Management**: Direct interaction with Bitcoin UTXOs
+- **State Anchoring**: Program state is anchored to Bitcoin transactions
+- **Threshold Signatures**: Uses Bitcoin-compatible Schnorr signatures
+- **RPC Integration**: Communicates with Bitcoin nodes via RPC
+
+### What is the consensus mechanism?
+
+Arch Network uses a combination of:
+- **ROAST**: Robust Asynchronous Schnorr Threshold Signatures
+- **FROST**: Flexible Round-Optimized Schnorr Threshold Signatures
+- **DKG**: Distributed Key Generation for validator coordination
+- **Bitcoin Finality**: Leverages Bitcoin's security guarantees
+
+### How do I handle Bitcoin transactions in my programs?
+
+You can interact with Bitcoin transactions through:
+- **UTXO Operations**: Create, spend, and manage UTXOs
+- **Transaction Validation**: Verify Bitcoin transaction signatures
+- **State Transitions**: Update program state based on Bitcoin events
+- **RPC Calls**: Query Bitcoin network state
+
+## Deployment Questions
+
+### How do I deploy my program to the network?
+
+1. **Build Your Program**: Use `cargo build-bpf` to compile
+2. **Deploy Locally**: Use `arch-cli deploy` for local testing
+3. **Testnet Deployment**: Deploy to testnet for broader testing
+4. **Mainnet Deployment**: Deploy to mainnet (when available)
+
+### What networks are available?
+
+Currently available:
+- **Regtest**: Local development network
+- **Testnet**: Public test network with real Bitcoin testnet
+- **Mainnet**: Production network (coming soon)
+
+### How do I interact with deployed programs?
+
+You can interact with programs using:
+- **Arch CLI**: Command-line interface for basic operations
+- **TypeScript SDK**: For building web applications
+- **Rust SDK**: For building Rust applications
+- **RPC API**: Direct API calls for custom integrations
+
+## Troubleshooting Questions
+
+### My program won't compile. What should I check?
+
+Common compilation issues:
+- **Rust Version**: Ensure you're using the latest stable Rust
+- **Dependencies**: Check that all dependencies are properly specified
+- **Arch Program Version**: Ensure you're using a compatible version
+- **Build Tools**: Verify Solana CLI is properly installed
+
+### The validator won't start. What's wrong?
+
+Common startup issues:
+- **Docker**: Ensure Docker is running and accessible
+- **Ports**: Check that required ports (9002, 18443, 8080) are available
+- **Dependencies**: Verify Bitcoin Core and Titan are properly configured
+- **Permissions**: Check file permissions for data directories
+
+### My program deployed but isn't working. How do I debug?
+
+Debugging steps:
+1. **Check Logs**: Use `arch-cli orchestrate logs` to view validator logs
+2. **Verify Deployment**: Confirm the program was deployed correctly
+3. **Test Locally**: Use unit tests to verify program logic
+4. **Check Accounts**: Ensure all required accounts are created
+5. **Validate Inputs**: Verify instruction data is correct
+
+## Community Questions
+
+### Where can I get help?
+
+You can get help from:
+- **Discord**: Join our [Discord community](https://discord.gg/archnetwork)
+- **GitHub**: Check issues and discussions on our repositories
+- **Documentation**: Browse our comprehensive documentation
+- **Examples**: Study our example programs and guides
+
+### How can I contribute to Arch Network?
+
+Ways to contribute:
+- **Code**: Submit pull requests to our repositories
+- **Documentation**: Help improve our documentation
+- **Examples**: Create example programs and tutorials
+- **Testing**: Help test new features and report bugs
+- **Community**: Help other developers in Discord
+
+### Is there a roadmap for future features?
+
+Yes! Planned features include:
+- **Additional Programming Languages**: Support for more languages
+- **Enhanced SDKs**: More comprehensive client libraries
+- **Cross-Chain Bridges**: Integration with other blockchains
+- **Privacy Features**: Enhanced privacy-preserving capabilities
+- **Performance Improvements**: Optimizations for better throughput
+
+## Still Have Questions?
+
+<Cards>
+  <Card title="Join Discord" href="https://discord.gg/archnetwork" external>
+    Get help from the community
+  </Card>
+  <Card title="GitHub Issues" href="https://github.com/Arch-Network/arch-network/issues" external>
+    Report bugs and request features
+  </Card>
+  <Card title="Documentation" href="/docs">
+    Browse our comprehensive guides
+  </Card>
+  <Card title="Examples" href="https://github.com/Arch-Network/arch-examples" external>
+    Study example programs
+  </Card>
+</Cards>
