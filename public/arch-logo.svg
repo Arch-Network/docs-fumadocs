@@ -2,43 +2,18 @@
   <defs>
     <linearGradient id="archGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#4E3AF1;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#6B4FF2;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#3d2bc7;stop-opacity:1" />
     </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-      <feMerge> 
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
   </defs>
   
-  <!-- Background circle with subtle shadow -->
-  <circle cx="50" cy="50" r="48" fill="url(#archGradient)" filter="url(#glow)"/>
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="45" fill="url(#archGradient)" stroke="#ffffff" stroke-width="2"/>
   
-  <!-- Inner circle for depth -->
-  <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
-  
-  <!-- Arch Network "A" - Modern geometric design -->
-  <g transform="translate(50, 50)">
-    <!-- Main A structure -->
-    <path d="M-12 20 L0 -20 L12 20 M-6 5 L6 5" 
-          stroke="#ffffff" 
-          stroke-width="4" 
-          stroke-linecap="round" 
-          stroke-linejoin="round" 
-          fill="none"/>
-    
-    <!-- Subtle inner highlight -->
-    <path d="M-10 18 L0 -18 L10 18 M-4 3 L4 3" 
-          stroke="rgba(255,255,255,0.3)" 
-          stroke-width="2" 
-          stroke-linecap="round" 
-          stroke-linejoin="round" 
-          fill="none"/>
-  </g>
-  
-  <!-- Subtle outer ring -->
-  <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <!-- Arch Network "A" -->
+  <path d="M30 70 L50 30 L70 70 M40 55 L60 55" 
+        stroke="#ffffff" 
+        stroke-width="6" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        fill="none"/>
 </svg>
