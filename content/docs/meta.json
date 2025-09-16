@@ -31,7 +31,10 @@
     {
       "title": "Program Development",
       "pages": [
-        "guides/writing-your-first-program"
+        "guides/writing-your-first-program",
+        "guides/how-to-create-a-fungible-token",
+        "guides/how-to-write-oracle-program",
+        "guides/how-to-build-runes-swap"
       ]
     },
     {

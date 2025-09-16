@@ -1,0 +1,634 @@
+---
+title: "Building Your First Bitcoin Runes Swap Application"
+description: "Complete guide to building a decentralized Runes token swap application on Arch Network"
+---
+
+Welcome to this hands-on tutorial! Today, we're going to build a decentralized application that enables users to swap Bitcoin Runes tokens on the Arch Network. By the end of this lesson, you'll understand how to create a secure, trustless swap mechanism for Runes tokens.
+
+## Class Prerequisites
+
+Before we dive in, please ensure you have:
+- Completed the [environment setup](/docs/getting-started/requirements)
+- A basic understanding of [Bitcoin Integration](/docs/concepts/bitcoin-integration)
+- Familiarity with Rust programming language
+- Your development environment ready with the Arch Network CLI installed
+
+## Lesson 1: Understanding the Basics
+
+### What are Runes?
+
+Before we write any code, let's understand what we're working with. Runes is a Bitcoin protocol for fungible tokens, similar to how BRC-20 works. Each Rune token has a unique identifier and can be transferred between Bitcoin addresses.
+
+### What are we building?
+
+We're creating a swap program that will:
+1. **Allow users to create swap offers** ("I want to trade X amount of Rune A for Y amount of Rune B")
+2. **Enable other users to accept these offers**
+3. **Let users cancel their offers** if they change their mind
+4. **Ensure all swaps are atomic** (they either complete fully or not at all)
+
+## Lesson 2: Setting Up Our Project
+
+Let's start by creating our project structure. Open your terminal and run:
+
+```bash
+# Create a new directory for your project
+mkdir runes-swap
+cd runes-swap
+
+# Initialize a new Rust project
+cargo init --lib
+
+# Your project structure should look like this:
+# runes-swap/
+# ├── Cargo.toml
+# ├── src/
+# │   └── lib.rs
+```
+
+## Lesson 3: Defining Our Data Structures
+
+Now, let's define the building blocks of our swap program. In programming, it's crucial to plan our data structures before implementing functionality.
+
+```rust
+use arch_program::{
+    account::AccountInfo,
+    entrypoint,
+    msg,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+    utxo::UtxoMeta,
+    borsh::{BorshDeserialize, BorshSerialize},
+};
+
+/// This structure represents a single swap offer in our system
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
+pub struct SwapOffer {
+    // Unique identifier for the offer
+    pub offer_id: u64,
+    // The public key of the person creating the offer
+    pub maker: Pubkey,
+    // The Rune ID they want to give
+    pub rune_id_give: String,
+    // Amount of Runes they want to give
+    pub amount_give: u64,
+    // The Rune ID they want to receive
+    pub rune_id_want: String,
+    // Amount of Runes they want to receive
+    pub amount_want: u64,
+    // When this offer expires (in block height)
+    pub expiry: u64,
+    // Current status of the offer
+    pub status: OfferStatus,
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq)]
+pub enum OfferStatus {
+    Active,
+    Filled,
+    Cancelled,
+    Expired,
+}
+```
+
+Let's break down why we chose each field:
+- **`offer_id`**: Every offer needs a unique identifier so we can reference it later
+- **`maker`**: We store who created the offer to ensure only they can cancel it
+- **`rune_id_give/want`**: These identify which Runes are being swapped
+- **`amount_give/want`**: The quantities of each Rune in the swap
+- **`expiry`**: Offers shouldn't live forever, so we add an expiration
+- **`status`**: Track whether the offer is still active or has been completed
+
+## Lesson 4: Implementing the Swap Logic
+
+Now that we understand our data structures, let's implement the core swap functionality. We'll start with creating an offer:
+
+```rust
+fn process_create_offer(
+    accounts: &[AccountInfo],
+    instruction: SwapInstruction,
+) -> Result<(), ProgramError> {
+    // Step 1: Get all the accounts we need
+    let account_iter = &mut accounts.iter();
+    let maker = next_account_info(account_iter)?;
+    let offer_account = next_account_info(account_iter)?;
+    let system_program = next_account_info(account_iter)?;
+    
+    // Step 2: Verify the maker is signing this transaction
+    if !maker.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+    
+    // Step 3: Create the swap offer
+    let offer = SwapOffer {
+        offer_id: instruction.offer_id,
+        maker: *maker.key,
+        rune_id_give: instruction.rune_id_give,
+        amount_give: instruction.amount_give,
+        rune_id_want: instruction.rune_id_want,
+        amount_want: instruction.amount_want,
+        expiry: instruction.expiry,
+        status: OfferStatus::Active,
+    };
+    
+    // Step 4: Store the offer in the account
+    let mut offer_data = offer_account.data.try_borrow_mut().unwrap();
+    let serialized_offer = offer.try_to_vec()
+        .map_err(|_| ProgramError::InvalidInstructionData)?;
+    
+    offer_data[..serialized_offer.len()].copy_from_slice(&serialized_offer);
+    
+    msg!("Swap offer created with ID: {}", offer.offer_id);
+    Ok(())
+}
+```
+
+## Lesson 5: Accepting Offers
+
+Now let's implement the logic for accepting an offer:
+
+```rust
+fn process_accept_offer(
+    accounts: &[AccountInfo],
+    instruction: SwapInstruction,
+) -> Result<(), ProgramError> {
+    let account_iter = &mut accounts.iter();
+    let taker = next_account_info(account_iter)?;
+    let offer_account = next_account_info(account_iter)?;
+    let maker_account = next_account_info(account_iter)?;
+    
+    // Verify the taker is signing
+    if !taker.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+    
+    // Load the existing offer
+    let offer_data = offer_account.data.try_borrow().unwrap();
+    let mut offer: SwapOffer = SwapOffer::try_from_slice(&offer_data)
+        .map_err(|_| ProgramError::InvalidAccountData)?;
+    
+    // Check if the offer is still active
+    if offer.status != OfferStatus::Active {
+        return Err(ProgramError::InvalidAccountData);
+    }
+    
+    // Check if the offer has expired
+    let current_block_height = arch_program::clock::Clock::get()?.slot;
+    if current_block_height > offer.expiry {
+        offer.status = OfferStatus::Expired;
+        return Err(ProgramError::InvalidAccountData);
+    }
+    
+    // Verify the taker has the required Runes
+    // This would involve checking UTXO balances in a real implementation
+    
+    // Mark the offer as filled
+    offer.status = OfferStatus::Filled;
+    
+    // Update the offer account
+    let mut offer_data_mut = offer_account.data.try_borrow_mut().unwrap();
+    let serialized_offer = offer.try_to_vec()
+        .map_err(|_| ProgramError::InvalidInstructionData)?;
+    
+    offer_data_mut[..serialized_offer.len()].copy_from_slice(&serialized_offer);
+    
+    msg!("Offer {} accepted by {}", offer.offer_id, taker.key);
+    Ok(())
+}
+```
+
+## Lesson 6: Cancelling Offers
+
+Let's add the ability for makers to cancel their offers:
+
+```rust
+fn process_cancel_offer(
+    accounts: &[AccountInfo],
+    instruction: SwapInstruction,
+) -> Result<(), ProgramError> {
+    let account_iter = &mut accounts.iter();
+    let maker = next_account_info(account_iter)?;
+    let offer_account = next_account_info(account_iter)?;
+    
+    // Verify the maker is signing
+    if !maker.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+    
+    // Load the existing offer
+    let offer_data = offer_account.data.try_borrow().unwrap();
+    let mut offer: SwapOffer = SwapOffer::try_from_slice(&offer_data)
+        .map_err(|_| ProgramError::InvalidAccountData)?;
+    
+    // Verify the maker owns this offer
+    if offer.maker != *maker.key {
+        return Err(ProgramError::InvalidAccountData);
+    }
+    
+    // Check if the offer is still active
+    if offer.status != OfferStatus::Active {
+        return Err(ProgramError::InvalidAccountData);
+    }
+    
+    // Mark the offer as cancelled
+    offer.status = OfferStatus::Cancelled;
+    
+    // Update the offer account
+    let mut offer_data_mut = offer_account.data.try_borrow_mut().unwrap();
+    let serialized_offer = offer.try_to_vec()
+        .map_err(|_| ProgramError::InvalidInstructionData)?;
+    
+    offer_data_mut[..serialized_offer.len()].copy_from_slice(&serialized_offer);
+    
+    msg!("Offer {} cancelled by maker", offer.offer_id);
+    Ok(())
+}
+```
+
+## Lesson 7: Complete Program Implementation
+
+Now let's put it all together in a complete program:
+
+```rust
+use arch_program::{
+    account::{next_account_info, AccountInfo},
+    entrypoint,
+    msg,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+    borsh::{BorshDeserialize, BorshSerialize},
+};
+
+// Program entry point
+entrypoint!(process_instruction);
+
+pub fn process_instruction(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    instruction_data: &[u8],
+) -> Result<(), ProgramError> {
+    let instruction = SwapInstruction::try_from_slice(instruction_data)
+        .map_err(|_| ProgramError::InvalidInstructionData)?;
+
+    match instruction {
+        SwapInstruction::CreateOffer {
+            offer_id,
+            rune_id_give,
+            amount_give,
+            rune_id_want,
+            amount_want,
+            expiry,
+        } => process_create_offer(accounts, SwapInstruction::CreateOffer {
+            offer_id,
+            rune_id_give,
+            amount_give,
+            rune_id_want,
+            amount_want,
+            expiry,
+        }),
+        SwapInstruction::AcceptOffer { offer_id } => {
+            process_accept_offer(accounts, SwapInstruction::AcceptOffer { offer_id })
+        }
+        SwapInstruction::CancelOffer { offer_id } => {
+            process_cancel_offer(accounts, SwapInstruction::CancelOffer { offer_id })
+        }
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize)]
+pub enum SwapInstruction {
+    CreateOffer {
+        offer_id: u64,
+        rune_id_give: String,
+        amount_give: u64,
+        rune_id_want: String,
+        amount_want: u64,
+        expiry: u64,
+    },
+    AcceptOffer {
+        offer_id: u64,
+    },
+    CancelOffer {
+        offer_id: u64,
+    },
+}
+
+// ... (include all the functions we defined above)
+```
+
+## Lesson 8: Testing Your Swap Program
+
+### Unit Tests
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use arch_program::test_utils::*;
+
+    #[test]
+    fn test_create_offer() {
+        let program_id = Pubkey::new_unique();
+        let maker = create_test_account(&program_id, 0);
+        let offer_account = create_test_account(&program_id, 1024);
+        
+        let instruction = SwapInstruction::CreateOffer {
+            offer_id: 1,
+            rune_id_give: "DOG".to_string(),
+            amount_give: 1000,
+            rune_id_want: "CAT".to_string(),
+            amount_want: 500,
+            expiry: 1000,
+        };
+
+        let result = process_create_offer(
+            &[maker, offer_account],
+            instruction,
+        );
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_accept_offer() {
+        // Create an active offer first
+        let program_id = Pubkey::new_unique();
+        let maker = create_test_account(&program_id, 0);
+        let taker = create_test_account(&program_id, 0);
+        let offer_account = create_test_account(&program_id, 1024);
+        
+        // Create the offer
+        let offer = SwapOffer {
+            offer_id: 1,
+            maker: *maker.key,
+            rune_id_give: "DOG".to_string(),
+            amount_give: 1000,
+            rune_id_want: "CAT".to_string(),
+            amount_want: 500,
+            expiry: 1000,
+            status: OfferStatus::Active,
+        };
+        
+        // Store the offer
+        let mut offer_data = offer_account.data.try_borrow_mut().unwrap();
+        let serialized_offer = offer.try_to_vec().unwrap();
+        offer_data[..serialized_offer.len()].copy_from_slice(&serialized_offer);
+        
+        // Accept the offer
+        let instruction = SwapInstruction::AcceptOffer { offer_id: 1 };
+        let result = process_accept_offer(
+            &[taker, offer_account, maker],
+            instruction,
+        );
+
+        assert!(result.is_ok());
+    }
+}
+```
+
+### Integration Tests
+
+```bash
+# Deploy your program
+cargo build-bpf
+arch-cli program deploy target/deploy/runes_swap.so
+
+# Create a swap offer
+arch-cli program call <PROGRAM_ID> \
+  --accounts ~/offer_account.key \
+  --instruction-data $(echo '{"CreateOffer":{"offer_id":1,"rune_id_give":"DOG","amount_give":1000,"rune_id_want":"CAT","amount_want":500,"expiry":1000}}' | base64) \
+  --keypair-path ~/maker.key
+
+# Accept the offer
+arch-cli program call <PROGRAM_ID> \
+  --accounts ~/offer_account.key,~/maker_account.key \
+  --instruction-data $(echo '{"AcceptOffer":{"offer_id":1}}' | base64) \
+  --keypair-path ~/taker.key
+```
+
+## Lesson 9: Advanced Features
+
+### Price Discovery
+
+```rust
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
+pub struct PriceOracle {
+    pub rune_id: String,
+    pub price_in_sats: u64,
+    pub last_updated: u64,
+}
+
+pub fn calculate_swap_price(
+    offer: &SwapOffer,
+    oracle: &PriceOracle,
+) -> Result<u64, ProgramError> {
+    // Calculate fair price based on oracle data
+    let give_price = oracle.price_in_sats;
+    let want_price = 1000; // This would come from another oracle
+    
+    let fair_amount_want = (offer.amount_give * give_price) / want_price;
+    
+    // Check if the offer is within 5% of fair price
+    let price_tolerance = fair_amount_want / 20; // 5%
+    if offer.amount_want > fair_amount_want + price_tolerance ||
+       offer.amount_want < fair_amount_want - price_tolerance {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    
+    Ok(fair_amount_want)
+}
+```
+
+### Liquidity Pools
+
+```rust
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
+pub struct LiquidityPool {
+    pub rune_id_a: String,
+    pub rune_id_b: String,
+    pub amount_a: u64,
+    pub amount_b: u64,
+    pub total_liquidity: u64,
+}
+
+pub fn add_liquidity(
+    pool: &mut LiquidityPool,
+    amount_a: u64,
+    amount_b: u64,
+) -> Result<u64, ProgramError> {
+    if pool.amount_a == 0 && pool.amount_b == 0 {
+        // First liquidity addition
+        pool.amount_a = amount_a;
+        pool.amount_b = amount_b;
+        pool.total_liquidity = amount_a + amount_b;
+        return Ok(pool.total_liquidity);
+    }
+    
+    // Calculate proportional liquidity
+    let liquidity_a = (amount_a * pool.total_liquidity) / pool.amount_a;
+    let liquidity_b = (amount_b * pool.total_liquidity) / pool.amount_b;
+    
+    let liquidity_to_add = liquidity_a.min(liquidity_b);
+    
+    pool.amount_a += amount_a;
+    pool.amount_b += amount_b;
+    pool.total_liquidity += liquidity_to_add;
+    
+    Ok(liquidity_to_add)
+}
+```
+
+## Lesson 10: Security Considerations
+
+### Input Validation
+
+```rust
+pub fn validate_offer(offer: &SwapOffer) -> Result<(), ProgramError> {
+    // Check for reasonable amounts
+    if offer.amount_give == 0 || offer.amount_want == 0 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    
+    // Check for reasonable expiry (not too far in the future)
+    let current_slot = arch_program::clock::Clock::get()?.slot;
+    if offer.expiry > current_slot + 10000 { // Max 10k slots ahead
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    
+    // Validate Rune IDs
+    if offer.rune_id_give.is_empty() || offer.rune_id_want.is_empty() {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    
+    // Prevent self-swaps
+    if offer.rune_id_give == offer.rune_id_want {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    
+    Ok(())
+}
+```
+
+### Access Control
+
+```rust
+pub fn verify_offer_ownership(
+    offer: &SwapOffer,
+    signer: &Pubkey,
+) -> Result<(), ProgramError> {
+    if offer.maker != *signer {
+        return Err(ProgramError::InvalidAccountData);
+    }
+    Ok(())
+}
+```
+
+## Lesson 11: Deployment and Testing
+
+### Build and Deploy
+
+```bash
+# Build the program
+cargo build-bpf
+
+# Deploy to local network
+arch-cli program deploy target/deploy/runes_swap.so
+
+# Deploy to testnet
+arch-cli program deploy target/deploy/runes_swap.so --url testnet
+```
+
+### Create Test Accounts
+
+```bash
+# Create test keypairs
+openssl rand -out ~/maker.key 32
+openssl rand -out ~/taker.key 32
+openssl rand -out ~/offer_account.key 32
+
+# Fund accounts
+arch-cli account airdrop --keypair-path ~/maker.key
+arch-cli account airdrop --keypair-path ~/taker.key
+```
+
+### Test the Complete Flow
+
+```bash
+# 1. Create an offer
+arch-cli program call <PROGRAM_ID> \
+  --accounts ~/offer_account.key \
+  --instruction-data $(echo '{"CreateOffer":{"offer_id":1,"rune_id_give":"DOG","amount_give":1000,"rune_id_want":"CAT","amount_want":500,"expiry":1000}}' | base64) \
+  --keypair-path ~/maker.key
+
+# 2. Check the offer status
+arch-cli account show ~/offer_account.key
+
+# 3. Accept the offer
+arch-cli program call <PROGRAM_ID> \
+  --accounts ~/offer_account.key,~/maker_account.key \
+  --instruction-data $(echo '{"AcceptOffer":{"offer_id":1}}' | base64) \
+  --keypair-path ~/taker.key
+
+# 4. Verify the offer is filled
+arch-cli account show ~/offer_account.key
+```
+
+## Best Practices
+
+### 1. Error Handling
+
+- Always validate inputs thoroughly
+- Provide meaningful error messages
+- Handle edge cases gracefully
+
+### 2. Security
+
+- Verify all signatures and ownership
+- Implement proper access controls
+- Use secure random number generation for IDs
+
+### 3. Performance
+
+- Optimize data structures for minimal storage
+- Use efficient serialization/deserialization
+- Consider gas costs in your design
+
+### 4. User Experience
+
+- Provide clear error messages
+- Implement proper status tracking
+- Add helpful logging for debugging
+
+## Next Steps
+
+<Cards>
+  <Card title="Lending Protocol Guide" href="/docs/guides/how-to-build-lending-protocol">
+    Build a lending protocol using your swap knowledge
+  </Card>
+  <Card title="Oracle Integration" href="/docs/guides/how-to-write-oracle-program">
+    Add price oracles to your swap
+  </Card>
+  <Card title="APL Token Program" href="/docs/apl/token-program">
+    Learn about the built-in token program
+  </Card>
+  <Card title="Arch Examples" href="https://github.com/Arch-Network/arch-examples" external>
+    Explore more example programs
+  </Card>
+</Cards>
+
+## Resources
+
+<Cards>
+  <Card title="Arch Examples Repository" href="https://github.com/Arch-Network/arch-examples" external>
+    Complete swap implementation examples
+  </Card>
+  <Card title="Bitcoin Integration" href="/docs/concepts/bitcoin-integration">
+    Understand Bitcoin integration in Arch
+  </Card>
+  <Card title="Program Development" href="/docs/guides/writing-your-first-program">
+    Master Arch program development
+  </Card>
+  <Card title="Community Discord" href="https://discord.gg/archnetwork" external>
+    Get help from the community
+  </Card>
+</Cards>
