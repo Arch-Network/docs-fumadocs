@@ -14,7 +14,7 @@ export function baseOptions(): BaseLayoutProps {
       title: (
         <>
           <Image
-            src="/arch-logo.svg"
+            src="/real-icon.png"
             alt="Arch Network Logo"
             width={24}
             height={24}
