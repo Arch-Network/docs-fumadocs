@@ -10,36 +10,44 @@
   },
   "sidebar": [
     {
-      "title": "Getting Started",
+      "title": "🚀 Quick Start",
       "pages": [
         "getting-started/quick-start",
-        "getting-started/bitcoin-and-titan-setup",
-        "getting-started/requirements",
-        "getting-started/faq",
-        "getting-started/resources"
+        "getting-started/requirements"
       ]
     },
     {
-      "title": "Core Concepts",
+      "title": "🏗️ Setup & Infrastructure",
       "pages": [
+        "getting-started/bitcoin-and-titan-setup",
         "concepts/architecture",
-        "concepts/bitcoin-integration",
-        "concepts/consensus",
         "concepts/network-architecture"
       ]
     },
     {
-      "title": "Program Development",
+      "title": "💡 Core Concepts",
+      "pages": [
+        "concepts/bitcoin-integration",
+        "concepts/consensus"
+      ]
+    },
+    {
+      "title": "🛠️ Development",
       "pages": [
         "guides/writing-your-first-program",
         "guides/how-to-create-a-fungible-token",
-        "guides/how-to-write-oracle-program",
+        "guides/how-to-write-oracle-program"
+      ]
+    },
+    {
+      "title": "🏦 DeFi & Applications",
+      "pages": [
         "guides/how-to-build-runes-swap",
         "guides/how-to-build-lending-protocol"
       ]
     },
     {
-      "title": "APL (Arch Program Library)",
+      "title": "📚 APL (Arch Program Library)",
       "pages": [
         "apl/introduction",
         "apl/token-program",
@@ -47,26 +55,19 @@
       ]
     },
     {
-      "title": "SDK Reference",
+      "title": "🔧 Tools & APIs",
       "pages": [
-        "sdk/sdk"
-      ]
-    },
-    {
-      "title": "Tools & CLI",
-      "pages": [
-        "guides/arch-cli-reference"
-      ]
-    },
-    {
-      "title": "Reference",
-      "pages": [
+        "guides/arch-cli-reference",
+        "sdk/sdk",
         "rpc/api-reference"
       ]
     },
     {
-      "title": "Resources",
-      "pages": []
+      "title": "❓ Help & Resources",
+      "pages": [
+        "getting-started/faq",
+        "getting-started/resources"
+      ]
     }
   ]
 }
