@@ -40,12 +40,15 @@
     {
       "title": "Arch Program Library (APL)",
       "pages": [
-        "apl/introduction"
+        "apl/introduction",
+        "apl/token-program"
       ]
     },
     {
       "title": "SDK Reference",
-      "pages": []
+      "pages": [
+        "sdk/sdk"
+      ]
     },
     {
       "title": "Tools & CLI",

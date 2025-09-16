@@ -1,0 +1,612 @@
+---
+title: "APL Token Program"
+description: "Complete reference for the Arch Program Library Token Program - creating and managing fungible tokens"
+---
+
+The APL Token Program is the foundation for creating and managing fungible tokens on the Arch Network. This documentation provides a comprehensive guide for developers implementing token functionality in their applications.
+
+## Overview
+
+The Token Program enables:
+- **Creation and management of fungible tokens** (mints)
+- **Token account management**
+- **Token transfers and delegations**
+- **Multisignature authorities**
+- **Account freezing and thawing**
+
+## Program ID
+
+```text
+AplToken111111111111111111111111
+```
+
+## Account Types
+
+### Mint Account
+
+The central record for a token type, containing:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `mint_authority` | `COption<Pubkey>` | Optional authority to mint new tokens |
+| `supply` | `u64` | Total number of tokens in circulation |
+| `decimals` | `u8` | Number of decimal places |
+| `is_initialized` | `bool` | Has this mint been initialized |
+| `freeze_authority` | `COption<Pubkey>` | Optional authority to freeze token accounts |
+
+### Token Account
+
+Holds token balances for a specific mint:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `mint` | `Pubkey` | The token mint this account holds |
+| `owner` | `Pubkey` | Owner of this account |
+| `amount` | `u64` | Number of tokens held |
+| `delegate` | `COption<Pubkey>` | Optional delegate authority |
+| `state` | `AccountState` | Account state (Uninitialized/Initialized/Frozen) |
+| `delegated_amount` | `u64` | Amount delegated |
+| `close_authority` | `COption<Pubkey>` | Optional authority to close the account |
+
+### Multisig Account
+
+Enables shared authority over token operations:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `m` | `u8` | Number of required signers |
+| `n` | `u8` | Number of valid signers |
+| `is_initialized` | `bool` | Has this multisig been initialized |
+| `signers` | `[Pubkey; MAX_SIGNERS]` | Array of valid signer addresses |
+
+## Instructions
+
+### Token Creation and Initialization
+
+#### InitializeMint
+
+Creates a new token type.
+
+```rust
+pub struct InitializeMint {
+    pub decimals: u8,
+    pub mint_authority: Pubkey,
+    pub freeze_authority: COption<Pubkey>,
+}
+```
+
+**Required accounts:**
+- `[writable]` The mint to initialize
+
+**Example:**
+```rust
+let mint = Keypair::new();
+let mint_authority = Keypair::new();
+let decimals = 9;
+
+let instruction = apl_token::instruction::initialize_mint(
+    &apl_token::id(),
+    &mint.pubkey(),
+    &mint_authority.pubkey(),
+    None, // No freeze authority
+    decimals,
+)?;
+```
+
+#### InitializeAccount
+
+Creates a new account to hold tokens.
+
+**Required accounts:**
+- `[writable]` The account to initialize
+- `[]` The mint this account is for
+- `[]` The owner of the new account
+
+**Example:**
+```rust
+let account = Keypair::new();
+let owner = Keypair::new();
+
+let instruction = apl_token::instruction::initialize_account(
+    &apl_token::id(),
+    &account.pubkey(),
+    &mint.pubkey(),
+    &owner.pubkey(),
+)?;
+```
+
+### Token Operations
+
+#### MintTo
+
+Creates new tokens and adds them to a token account.
+
+```rust
+pub struct MintTo {
+    pub amount: u64,
+}
+```
+
+**Required accounts:**
+- `[writable]` The mint
+- `[writable]` The destination token account
+- `[signer]` The mint authority
+
+**Example:**
+```rust
+let instruction = apl_token::instruction::mint_to(
+    &apl_token::id(),
+    &mint.pubkey(),
+    &destination_account.pubkey(),
+    &mint_authority.pubkey(),
+    &[],
+    1000000000, // 1 token with 9 decimals
+)?;
+```
+
+#### Transfer
+
+Transfers tokens from one account to another.
+
+```rust
+pub struct Transfer {
+    pub amount: u64,
+}
+```
+
+**Required accounts:**
+- `[writable]` The source token account
+- `[writable]` The destination token account
+- `[signer]` The source account owner
+
+**Example:**
+```rust
+let instruction = apl_token::instruction::transfer(
+    &apl_token::id(),
+    &source_account.pubkey(),
+    &destination_account.pubkey(),
+    &owner.pubkey(),
+    &[],
+    500000000, // 0.5 tokens
+)?;
+```
+
+#### TransferChecked
+
+Transfers tokens with additional validation.
+
+```rust
+pub struct TransferChecked {
+    pub amount: u64,
+    pub decimals: u8,
+}
+```
+
+**Required accounts:**
+- `[writable]` The source token account
+- `[]` The mint
+- `[writable]` The destination token account
+- `[signer]` The source account owner
+
+**Example:**
+```rust
+let instruction = apl_token::instruction::transfer_checked(
+    &apl_token::id(),
+    &source_account.pubkey(),
+    &mint.pubkey(),
+    &destination_account.pubkey(),
+    &owner.pubkey(),
+    &[],
+    500000000, // 0.5 tokens
+    9, // decimals
+)?;
+```
+
+### Delegation
+
+#### Approve
+
+Allows a delegate to transfer tokens on behalf of the owner.
+
+```rust
+pub struct Approve {
+    pub amount: u64,
+}
+```
+
+**Required accounts:**
+- `[writable]` The token account
+- `[]` The delegate
+- `[signer]` The account owner
+
+**Example:**
+```rust
+let delegate = Keypair::new();
+
+let instruction = apl_token::instruction::approve(
+    &apl_token::id(),
+    &token_account.pubkey(),
+    &delegate.pubkey(),
+    &owner.pubkey(),
+    &[],
+    1000000000, // 1 token
+)?;
+```
+
+#### Revoke
+
+Removes delegation authority.
+
+**Required accounts:**
+- `[writable]` The token account
+- `[signer]` The account owner
+
+**Example:**
+```rust
+let instruction = apl_token::instruction::revoke(
+    &apl_token::id(),
+    &token_account.pubkey(),
+    &owner.pubkey(),
+    &[],
+)?;
+```
+
+### Account Management
+
+#### FreezeAccount
+
+Freezes a token account, preventing transfers.
+
+**Required accounts:**
+- `[writable]` The token account
+- `[]` The mint
+- `[signer]` The freeze authority
+
+**Example:**
+```rust
+let instruction = apl_token::instruction::freeze_account(
+    &apl_token::id(),
+    &token_account.pubkey(),
+    &mint.pubkey(),
+    &freeze_authority.pubkey(),
+    &[],
+)?;
+```
+
+#### ThawAccount
+
+Unfreezes a frozen token account.
+
+**Required accounts:**
+- `[writable]` The token account
+- `[]` The mint
+- `[signer]` The freeze authority
+
+**Example:**
+```rust
+let instruction = apl_token::instruction::thaw_account(
+    &apl_token::id(),
+    &token_account.pubkey(),
+    &mint.pubkey(),
+    &freeze_authority.pubkey(),
+    &[],
+)?;
+```
+
+#### CloseAccount
+
+Closes a token account and reclaims rent.
+
+**Required accounts:**
+- `[writable]` The token account
+- `[writable]` The destination for reclaimed rent
+- `[signer]` The account owner
+
+**Example:**
+```rust
+let instruction = apl_token::instruction::close_account(
+    &apl_token::id(),
+    &token_account.pubkey(),
+    &destination_account.pubkey(),
+    &owner.pubkey(),
+    &[],
+)?;
+```
+
+### Multisig Operations
+
+#### InitializeMultisig
+
+Creates a multisig account for shared authority.
+
+```rust
+pub struct InitializeMultisig {
+    pub m: u8, // Required signatures
+}
+```
+
+**Required accounts:**
+- `[writable]` The multisig account
+- `[]` The rent sysvar
+
+**Example:**
+```rust
+let multisig = Keypair::new();
+let signers = vec![signer1.pubkey(), signer2.pubkey(), signer3.pubkey()];
+
+let instruction = apl_token::instruction::initialize_multisig(
+    &apl_token::id(),
+    &multisig.pubkey(),
+    &signers,
+    2, // Require 2 of 3 signatures
+)?;
+```
+
+## Error Codes
+
+| Code | Name | Description |
+|------|------|-------------|
+| 0 | `InvalidMint` | The mint provided is not valid |
+| 1 | `InvalidOwner` | The owner provided is not valid |
+| 2 | `InvalidAmount` | The amount provided is not valid |
+| 3 | `InvalidDelegate` | The delegate provided is not valid |
+| 4 | `InvalidAccount` | The account provided is not valid |
+| 5 | `InvalidState` | The account state is not valid |
+| 6 | `InvalidAuthority` | The authority provided is not valid |
+| 7 | `InvalidCloseAuthority` | The close authority provided is not valid |
+| 8 | `InvalidFreezeAuthority` | The freeze authority provided is not valid |
+| 9 | `InvalidMintAuthority` | The mint authority provided is not valid |
+| 10 | `InvalidSupply` | The supply provided is not valid |
+| 11 | `InvalidDecimals` | The decimals provided are not valid |
+| 12 | `InvalidInstruction` | The instruction provided is not valid |
+| 13 | `InvalidProgramId` | The program ID provided is not valid |
+| 14 | `InvalidAccountData` | The account data provided is not valid |
+| 15 | `InvalidAccountOwner` | The account owner provided is not valid |
+| 16 | `InvalidAccountDataLength` | The account data length is not valid |
+| 17 | `InvalidAccountDataFormat` | The account data format is not valid |
+| 18 | `InvalidAccountDataVersion` | The account data version is not valid |
+| 19 | `InvalidAccountDataDiscriminator` | The account data discriminator is not valid |
+
+## Usage Examples
+
+### Creating a Token
+
+```rust
+use arch_sdk::prelude::*;
+use apl_token::prelude::*;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Connect to Arch Network
+    let client = ArchNetworkClient::new("http://localhost:9002").await?;
+    
+    // Create keypairs
+    let mint_keypair = Keypair::new();
+    let mint_authority = Keypair::new();
+    let payer = Keypair::new();
+    
+    // Create mint account
+    let mint_account = client.create_account(
+        CreateAccountParams {
+            space: 82, // Mint account size
+            owner: apl_token::id(),
+            payer: &payer,
+        }
+    ).await?;
+    
+    // Initialize mint
+    let instruction = initialize_mint(
+        &apl_token::id(),
+        &mint_account.pubkey(),
+        &mint_authority.pubkey(),
+        None, // No freeze authority
+        9, // 9 decimals
+    )?;
+    
+    // Send transaction
+    let transaction = Transaction::new()
+        .add_instruction(instruction);
+    
+    let signature = client.send_transaction(transaction, &[&payer, &mint_authority]).await?;
+    println!("Mint created: {}", signature);
+    
+    Ok(())
+}
+```
+
+### Creating a Token Account
+
+```rust
+async fn create_token_account(
+    client: &ArchNetworkClient,
+    mint: &Pubkey,
+    owner: &Pubkey,
+    payer: &Keypair,
+) -> Result<Pubkey, Box<dyn std::error::Error>> {
+    // Create account
+    let account = client.create_account(
+        CreateAccountParams {
+            space: 165, // Token account size
+            owner: apl_token::id(),
+            payer,
+        }
+    ).await?;
+    
+    // Initialize account
+    let instruction = initialize_account(
+        &apl_token::id(),
+        &account.pubkey(),
+        mint,
+        owner,
+    )?;
+    
+    // Send transaction
+    let transaction = Transaction::new()
+        .add_instruction(instruction);
+    
+    client.send_transaction(transaction, &[payer]).await?;
+    
+    Ok(account.pubkey())
+}
+```
+
+### Minting Tokens
+
+```rust
+async fn mint_tokens(
+    client: &ArchNetworkClient,
+    mint: &Pubkey,
+    destination: &Pubkey,
+    amount: u64,
+    mint_authority: &Keypair,
+    payer: &Keypair,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let instruction = mint_to(
+        &apl_token::id(),
+        mint,
+        destination,
+        &mint_authority.pubkey(),
+        &[],
+        amount,
+    )?;
+    
+    let transaction = Transaction::new()
+        .add_instruction(instruction);
+    
+    client.send_transaction(transaction, &[mint_authority, payer]).await?;
+    
+    Ok(())
+}
+```
+
+### Transferring Tokens
+
+```rust
+async fn transfer_tokens(
+    client: &ArchNetworkClient,
+    source: &Pubkey,
+    destination: &Pubkey,
+    amount: u64,
+    owner: &Keypair,
+    payer: &Keypair,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let instruction = transfer(
+        &apl_token::id(),
+        source,
+        destination,
+        &owner.pubkey(),
+        &[],
+        amount,
+    )?;
+    
+    let transaction = Transaction::new()
+        .add_instruction(instruction);
+    
+    client.send_transaction(transaction, &[owner, payer]).await?;
+    
+    Ok(())
+}
+```
+
+## CLI Usage
+
+### Create a Token Mint
+
+```bash
+# Create a new token mint
+arch-cli token create-mint \
+  --decimals 9 \
+  --mint-authority ~/mint_authority.key \
+  --keypair-path ~/payer.key
+```
+
+### Create a Token Account
+
+```bash
+# Create a token account
+arch-cli token create-account \
+  --mint <MINT_ADDRESS> \
+  --owner ~/owner.key \
+  --keypair-path ~/payer.key
+```
+
+### Mint Tokens
+
+```bash
+# Mint tokens to an account
+arch-cli token mint-to \
+  --mint <MINT_ADDRESS> \
+  --destination <TOKEN_ACCOUNT> \
+  --amount 1000000000 \
+  --mint-authority ~/mint_authority.key \
+  --keypair-path ~/payer.key
+```
+
+### Transfer Tokens
+
+```bash
+# Transfer tokens between accounts
+arch-cli token transfer \
+  --source <SOURCE_ACCOUNT> \
+  --destination <DESTINATION_ACCOUNT> \
+  --amount 500000000 \
+  --owner ~/owner.key \
+  --keypair-path ~/payer.key
+```
+
+## Best Practices
+
+### Security
+
+1. **Secure Key Management**: Store private keys securely and never share them
+2. **Use Multisig**: Implement multisig for important operations
+3. **Regular Audits**: Regularly audit token operations and balances
+4. **Access Control**: Implement proper access controls for mint authorities
+
+### Performance
+
+1. **Batch Operations**: Use batch operations for multiple transfers
+2. **Account Management**: Close unused accounts to reclaim rent
+3. **Efficient Decimals**: Choose appropriate decimal places for your use case
+4. **Monitor Gas**: Monitor transaction costs and optimize accordingly
+
+### Development
+
+1. **Test Thoroughly**: Test all operations in development before production
+2. **Error Handling**: Implement proper error handling in your applications
+3. **Documentation**: Document your token's purpose and operations
+4. **Community**: Follow community best practices and standards
+
+## Next Steps
+
+<Cards>
+  <Card title="Associated Token Account" href="/docs/apl/associated-token-account">
+    Learn about associated token accounts
+  </Card>
+  <Card title="Token Guide" href="/docs/guides/how-to-create-a-fungible-token">
+    Complete guide to creating tokens
+  </Card>
+  <Card title="SDK Reference" href="/docs/sdk/sdk">
+    Learn to use the SDKs
+  </Card>
+  <Card title="Examples" href="https://github.com/Arch-Network/arch-examples" external>
+    Explore example implementations
+  </Card>
+</Cards>
+
+## Resources
+
+<Cards>
+  <Card title="APL Source Code" href="https://github.com/Arch-Network/apl" external>
+    View the complete source code
+  </Card>
+  <Card title="Token Guide" href="/docs/guides/how-to-create-a-fungible-token">
+    Step-by-step token creation guide
+  </Card>
+  <Card title="CLI Reference" href="/docs/guides/arch-cli-reference">
+    Complete CLI command reference
+  </Card>
+  <Card title="Community Discord" href="https://discord.gg/archnetwork" external>
+    Get help from the community
+  </Card>
+</Cards>
