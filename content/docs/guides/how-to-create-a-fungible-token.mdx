@@ -1,0 +1,480 @@
+---
+title: "Creating APL Tokens on Arch Network"
+description: "Complete guide to creating and managing fungible tokens using the APL Token Program"
+---
+
+This guide shows you how to create and manage fungible tokens on Arch Network using the built-in **APL (Arch Program Library) Token Program**. APL tokens are based on Solana's SPL token standard and provide a robust foundation for creating and managing tokens on Arch Network.
+
+## What You'll Learn
+
+By the end of this guide, you'll understand how to:
+- **Create token mints** using the Arch CLI
+- **Initialize token accounts** for holding tokens
+- **Mint tokens** to accounts
+- **Transfer tokens** between accounts
+- **Approve delegations** for spending tokens
+- **Burn tokens** and manage token lifecycle
+- **Use advanced features** like multisig, freezing, and batch operations
+
+## Overview
+
+:::note
+All arch-cli addresses, public keys, transaction IDs, and block hashes are base58 (32 bytes for IDs/pubkeys).
+:::
+
+The APL Token Program is Arch Network's native token standard, providing:
+- **SPL Token Compatibility**: Based on Solana's proven token standard
+- **Bitcoin Integration**: All operations are recorded on Bitcoin
+- **Comprehensive Features**: Minting, transferring, burning, delegation, freezing
+- **Multisig Support**: Multiple signature authorities for enhanced security
+- **CLI Integration**: Full command-line interface for token management
+
+## Prerequisites
+
+Before starting, ensure you have:
+- **Rust 1.84.1+** and Cargo installed ([Install Rust](https://rustup.rs/))
+- **Arch Network CLI** - [Download Latest](https://github.com/Arch-Network/arch-network/releases/latest)
+- **Docker** - Required for local development
+- **Running development environment** (see [Quick Start Guide](/docs/getting-started/quick-start))
+
+## APL Token Program ID
+
+The APL Token Program has a fixed program ID:
+```text
+AplToken111111111111111111111111
+```
+
+## Quick Start: Create Your First Token
+
+### Step 1: Start Local Environment
+
+```bash
+# Start local development environment
+arch-cli orchestrate start
+
+# Verify services are running
+arch-cli orchestrate validator-status
+arch-cli get-block-height
+```
+
+### Step 2: Create Configuration Profile
+
+```bash
+# Create a profile for local development
+arch-cli config create-profile local \
+    --bitcoin-node-endpoint http://127.0.0.1:18443 \
+    --bitcoin-node-username bitcoin \
+    --bitcoin-node-password bitcoinpass \
+    --bitcoin-network regtest \
+    --arch-node-url http://localhost:9002
+
+# Set as default profile
+arch-cli config set-default-profile local
+```
+
+### Step 3: Generate Demo Keys
+
+```bash
+# Create directory for demo keys
+mkdir -p ~/DEMO_KEYS
+
+# Generate keys for different roles
+openssl rand -out ~/DEMO_KEYS/payer.key 32
+openssl rand -out ~/DEMO_KEYS/mint_authority.key 32
+openssl rand -out ~/DEMO_KEYS/mint.key 32
+
+# Fund the payer account
+arch-cli account airdrop --keypair-path ~/DEMO_KEYS/payer.key
+```
+
+### Step 4: Create Token Mint
+
+```bash
+# Create a new token mint with 6 decimals (SPL-style)
+# Provide the mint authority and payer; optionally provide a mint keypair
+arch-cli token create-mint \
+  --decimals 6 \
+  --mint-authority ~/DEMO_KEYS/mint_authority.key \
+  --mint-keypair-path ~/DEMO_KEYS/mint.key \
+  --keypair-path  ~/DEMO_KEYS/payer.key
+
+# Save the mint address (disable colors to parse reliably)
+export MINT=$(NO_COLOR=1 arch-cli token show-mint ~/DEMO_KEYS/mint.key | awk -F': ' '/^Address:/{print $2}')
+echo "Mint address: $MINT"
+```
+
+### Step 5: Create Token Account
+
+```bash
+# Generate a keypair for the token account owner
+openssl rand -out ~/DEMO_KEYS/token_account_owner.key 32
+
+# Create a token account for the owner
+arch-cli token create-account \
+  --mint $MINT \
+  --owner ~/DEMO_KEYS/token_account_owner.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+
+# Save the token account address
+export TOKEN_ACCOUNT=$(NO_COLOR=1 arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner.key | awk -F': ' '/^Address:/{print $2}')
+echo "Token account: $TOKEN_ACCOUNT"
+```
+
+### Step 6: Mint Tokens
+
+```bash
+# Mint 1000 tokens to the token account
+arch-cli token mint-to \
+  --mint $MINT \
+  --destination $TOKEN_ACCOUNT \
+  --amount 1000000000 \
+  --mint-authority ~/DEMO_KEYS/mint_authority.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+
+# Check the token account balance
+arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner.key
+```
+
+## Advanced Token Operations
+
+### Transfer Tokens
+
+```bash
+# Create a second token account for transfers
+openssl rand -out ~/DEMO_KEYS/recipient.key 32
+arch-cli token create-account \
+  --mint $MINT \
+  --owner ~/DEMO_KEYS/recipient.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+
+export RECIPIENT_ACCOUNT=$(NO_COLOR=1 arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/recipient.key | awk -F': ' '/^Address:/{print $2}')
+
+# Transfer 100 tokens (100000000 units with 6 decimals)
+arch-cli token transfer \
+  --source $TOKEN_ACCOUNT \
+  --destination $RECIPIENT_ACCOUNT \
+  --amount 100000000 \
+  --owner ~/DEMO_KEYS/token_account_owner.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+```
+
+### Approve Delegation
+
+```bash
+# Generate a delegate keypair
+openssl rand -out ~/DEMO_KEYS/delegate.key 32
+
+# Approve the delegate to spend 50 tokens
+arch-cli token approve \
+  --account $TOKEN_ACCOUNT \
+  --delegate ~/DEMO_KEYS/delegate.key \
+  --amount 50000000 \
+  --owner ~/DEMO_KEYS/token_account_owner.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+
+# Check the delegation
+arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner.key
+```
+
+### Transfer from Delegate
+
+```bash
+# Transfer tokens using the delegate
+arch-cli token transfer-from \
+  --source $TOKEN_ACCOUNT \
+  --destination $RECIPIENT_ACCOUNT \
+  --amount 25000000 \
+  --delegate ~/DEMO_KEYS/delegate.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+```
+
+### Burn Tokens
+
+```bash
+# Burn 10 tokens from the token account
+arch-cli token burn \
+  --account $TOKEN_ACCOUNT \
+  --amount 10000000 \
+  --owner ~/DEMO_KEYS/token_account_owner.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+```
+
+## Token Account Management
+
+### Freeze and Thaw Accounts
+
+```bash
+# Freeze the token account (prevents transfers)
+arch-cli token freeze-account \
+  --account $TOKEN_ACCOUNT \
+  --mint-authority ~/DEMO_KEYS/mint_authority.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+
+# Thaw the account (re-enable transfers)
+arch-cli token thaw-account \
+  --account $TOKEN_ACCOUNT \
+  --mint-authority ~/DEMO_KEYS/mint_authority.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+```
+
+### Close Token Account
+
+```bash
+# Close the token account (reclaims rent)
+arch-cli token close-account \
+  --account $TOKEN_ACCOUNT \
+  --destination ~/DEMO_KEYS/payer.key \
+  --owner ~/DEMO_KEYS/token_account_owner.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+```
+
+## Multisig Token Operations
+
+### Create Multisig Mint Authority
+
+```bash
+# Generate multiple authority keypairs
+openssl rand -out ~/DEMO_KEYS/authority1.key 32
+openssl rand -out ~/DEMO_KEYS/authority2.key 32
+openssl rand -out ~/DEMO_KEYS/authority3.key 32
+
+# Create a multisig mint (requires 2 of 3 signatures)
+arch-cli token create-multisig-mint \
+  --decimals 6 \
+  --authorities ~/DEMO_KEYS/authority1.key,~/DEMO_KEYS/authority2.key,~/DEMO_KEYS/authority3.key \
+  --threshold 2 \
+  --keypair-path ~/DEMO_KEYS/payer.key
+
+export MULTISIG_MINT=$(NO_COLOR=1 arch-cli token show-multisig-mint --authorities ~/DEMO_KEYS/authority1.key,~/DEMO_KEYS/authority2.key,~/DEMO_KEYS/authority3.key | awk -F': ' '/^Address:/{print $2}')
+```
+
+### Mint with Multisig
+
+```bash
+# Create a token account for the multisig mint
+arch-cli token create-account \
+  --mint $MULTISIG_MINT \
+  --owner ~/DEMO_KEYS/token_account_owner.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+
+export MULTISIG_ACCOUNT=$(NO_COLOR=1 arch-cli token show-account --mint $MULTISIG_MINT --owner ~/DEMO_KEYS/token_account_owner.key | awk -F': ' '/^Address:/{print $2}')
+
+# Mint tokens using multisig (requires 2 signatures)
+arch-cli token mint-to-multisig \
+  --mint $MULTISIG_MINT \
+  --destination $MULTISIG_ACCOUNT \
+  --amount 1000000000 \
+  --authorities ~/DEMO_KEYS/authority1.key,~/DEMO_KEYS/authority2.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+```
+
+## Token Metadata
+
+### Set Token Metadata
+
+```bash
+# Set metadata for your token
+arch-cli token set-metadata \
+  --mint $MINT \
+  --name "My Awesome Token" \
+  --symbol "MAT" \
+  --description "A demonstration token for Arch Network" \
+  --image "https://example.com/token-image.png" \
+  --mint-authority ~/DEMO_KEYS/mint_authority.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+```
+
+### View Token Metadata
+
+```bash
+# View the token metadata
+arch-cli token show-metadata --mint $MINT
+```
+
+## Batch Operations
+
+### Batch Transfer
+
+```bash
+# Create multiple recipient accounts
+for i in {1..3}; do
+  openssl rand -out ~/DEMO_KEYS/recipient$i.key 32
+  arch-cli token create-account \
+    --mint $MINT \
+    --owner ~/DEMO_KEYS/recipient$i.key \
+    --keypair-path ~/DEMO_KEYS/payer.key
+done
+
+# Batch transfer to multiple accounts
+arch-cli token batch-transfer \
+  --source $TOKEN_ACCOUNT \
+  --destinations ~/DEMO_KEYS/recipient1.key,~/DEMO_KEYS/recipient2.key,~/DEMO_KEYS/recipient3.key \
+  --amounts 100000000,200000000,300000000 \
+  --owner ~/DEMO_KEYS/token_account_owner.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
+```
+
+## Error Handling and Troubleshooting
+
+### Common Issues
+
+**Insufficient Balance:**
+```bash
+# Check account balance before operations
+arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner.key
+```
+
+**Invalid Authority:**
+```bash
+# Verify you're using the correct authority keypair
+arch-cli token show-mint $MINT
+```
+
+**Account Not Found:**
+```bash
+# Ensure the token account exists
+arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner.key
+```
+
+### Debug Commands
+
+```bash
+# Show detailed token information
+arch-cli token show-mint $MINT --verbose
+
+# Show account details with history
+arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner.key --history
+
+# Check transaction status
+arch-cli get-transaction-report <TRANSACTION_ID>
+```
+
+## Best Practices
+
+### Security
+
+1. **Secure Key Management**: Store private keys securely and never share them
+2. **Use Multisig**: Implement multisig for important operations
+3. **Regular Audits**: Regularly audit token operations and balances
+4. **Access Control**: Implement proper access controls for mint authorities
+
+### Performance
+
+1. **Batch Operations**: Use batch operations for multiple transfers
+2. **Account Management**: Close unused accounts to reclaim rent
+3. **Efficient Decimals**: Choose appropriate decimal places for your use case
+4. **Monitor Gas**: Monitor transaction costs and optimize accordingly
+
+### Development
+
+1. **Test Thoroughly**: Test all operations in development before production
+2. **Error Handling**: Implement proper error handling in your applications
+3. **Documentation**: Document your token's purpose and operations
+4. **Community**: Follow community best practices and standards
+
+## Integration Examples
+
+### TypeScript Integration
+
+```typescript
+import { ArchNetworkClient } from '@arch-network/sdk';
+
+const client = new ArchNetworkClient('http://localhost:9002');
+
+// Create a token mint
+const mint = await client.createTokenMint({
+  decimals: 6,
+  mintAuthority: mintAuthorityKeypair,
+  payer: payerKeypair
+});
+
+// Create a token account
+const tokenAccount = await client.createTokenAccount({
+  mint: mint.publicKey,
+  owner: ownerKeypair.publicKey,
+  payer: payerKeypair
+});
+
+// Mint tokens
+await client.mintTo({
+  mint: mint.publicKey,
+  destination: tokenAccount,
+  amount: 1000000000,
+  mintAuthority: mintAuthorityKeypair
+});
+```
+
+### Rust Integration
+
+```rust
+use arch_network_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = ArchNetworkClient::new("http://localhost:9002").await?;
+    
+    // Create token mint
+    let mint = client.create_token_mint(
+        CreateTokenMintParams {
+            decimals: 6,
+            mint_authority: &mint_authority_keypair,
+            payer: &payer_keypair,
+        }
+    ).await?;
+    
+    // Create token account
+    let token_account = client.create_token_account(
+        CreateTokenAccountParams {
+            mint: mint.pubkey(),
+            owner: owner_keypair.pubkey(),
+            payer: &payer_keypair,
+        }
+    ).await?;
+    
+    // Mint tokens
+    client.mint_to(
+        MintToParams {
+            mint: mint.pubkey(),
+            destination: token_account,
+            amount: 1000000000,
+            mint_authority: &mint_authority_keypair,
+        }
+    ).await?;
+    
+    Ok(())
+}
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Oracle Program Guide" href="/docs/guides/how-to-write-oracle-program">
+    Learn to build price oracles
+  </Card>
+  <Card title="Runes Swap Guide" href="/docs/guides/how-to-build-runes-swap">
+    Build a token swap protocol
+  </Card>
+  <Card title="Lending Protocol" href="/docs/guides/how-to-build-lending-protocol">
+    Create a lending protocol
+  </Card>
+  <Card title="APL Documentation" href="/docs/apl/token-program">
+    Deep dive into the APL Token Program
+  </Card>
+</Cards>
+
+## Resources
+
+<Cards>
+  <Card title="APL Token Program" href="/docs/apl/token-program">
+    Complete APL Token Program documentation
+  </Card>
+  <Card title="SDK Reference" href="/docs/sdk/sdk">
+    Client SDK documentation
+  </Card>
+  <Card title="CLI Reference" href="/docs/guides/arch-cli-reference">
+    Complete CLI command reference
+  </Card>
+  <Card title="Community Discord" href="https://discord.gg/archnetwork" external>
+    Get help from the community
+  </Card>
+</Cards>
