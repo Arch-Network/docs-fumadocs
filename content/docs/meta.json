@@ -1,0 +1,49 @@
+{
+  "title": "Arch Network Documentation",
+  "description": "Documentation for the Arch Network - A Bitcoin-native computation environment",
+  "icon": "/icon.png",
+  "defaultLocale": "en",
+  "locales": {
+    "en": {
+      "label": "English"
+    }
+  },
+  "sidebar": [
+    {
+      "title": "Getting Started",
+      "pages": [
+        "getting-started/quick-start"
+      ]
+    },
+    {
+      "title": "Core Concepts",
+      "pages": [
+        "concepts/architecture"
+      ]
+    },
+    {
+      "title": "Program Development",
+      "pages": []
+    },
+    {
+      "title": "Arch Program Library (APL)",
+      "pages": []
+    },
+    {
+      "title": "SDK Reference",
+      "pages": []
+    },
+    {
+      "title": "Tools & CLI",
+      "pages": []
+    },
+    {
+      "title": "Reference",
+      "pages": []
+    },
+    {
+      "title": "Resources",
+      "pages": []
+    }
+  ]
+}
