@@ -10,14 +10,14 @@
   },
   "sidebar": [
     {
-      "title": "🚀 Quick Start",
+      "title": "Quick Start",
       "pages": [
         "getting-started/quick-start",
         "getting-started/requirements"
       ]
     },
     {
-      "title": "🏗️ Setup & Infrastructure",
+      "title": "Setup & Infrastructure",
       "pages": [
         "getting-started/bitcoin-and-titan-setup",
         "concepts/architecture",
@@ -25,14 +25,14 @@
       ]
     },
     {
-      "title": "💡 Core Concepts",
+      "title": "Core Concepts",
       "pages": [
         "concepts/bitcoin-integration",
         "concepts/consensus"
       ]
     },
     {
-      "title": "🛠️ Development",
+      "title": "Development",
       "pages": [
         "guides/writing-your-first-program",
         "guides/how-to-create-a-fungible-token",
@@ -40,14 +40,14 @@
       ]
     },
     {
-      "title": "🏦 DeFi & Applications",
+      "title": "DeFi & Applications",
       "pages": [
         "guides/how-to-build-runes-swap",
         "guides/how-to-build-lending-protocol"
       ]
     },
     {
-      "title": "📚 APL (Arch Program Library)",
+      "title": "APL (Arch Program Library)",
       "pages": [
         "apl/introduction",
         "apl/token-program",
@@ -55,7 +55,7 @@
       ]
     },
     {
-      "title": "🔧 Tools & APIs",
+      "title": "Tools & APIs",
       "pages": [
         "guides/arch-cli-reference",
         "sdk/sdk",
@@ -63,7 +63,7 @@
       ]
     },
     {
-      "title": "❓ Help & Resources",
+      "title": "Help & Resources",
       "pages": [
         "getting-started/faq",
         "getting-started/resources"
