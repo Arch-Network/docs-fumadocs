@@ -1,3 +1,48 @@
 @import 'tailwindcss';
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
+
+/* Arch Network Theme Colors */
+:root {
+  --fd-primary: #4E3AF1;
+  --fd-primary-foreground: #ffffff;
+  --fd-primary-hover: #3d2bc7;
+  --fd-accent: #4E3AF1;
+  --fd-accent-foreground: #ffffff;
+}
+
+/* Override Fumadocs default colors with Arch Network theme */
+[data-theme="light"] {
+  --fd-primary: #4E3AF1;
+  --fd-primary-foreground: #ffffff;
+  --fd-accent: #4E3AF1;
+  --fd-accent-foreground: #ffffff;
+}
+
+[data-theme="dark"] {
+  --fd-primary: #4E3AF1;
+  --fd-primary-foreground: #ffffff;
+  --fd-accent: #4E3AF1;
+  --fd-accent-foreground: #ffffff;
+}
+
+/* Custom button and link styles */
+.fd-primary {
+  background-color: var(--fd-primary);
+  color: var(--fd-primary-foreground);
+}
+
+.fd-primary:hover {
+  background-color: var(--fd-primary-hover);
+}
+
+/* Navigation and sidebar accent colors */
+nav a[data-active="true"],
+.sidebar a[data-active="true"] {
+  color: var(--fd-primary);
+}
+
+/* Link hover effects */
+a:hover {
+  color: var(--fd-primary);
+}
