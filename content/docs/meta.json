@@ -52,7 +52,9 @@
     },
     {
       "title": "Tools & CLI",
-      "pages": []
+      "pages": [
+        "guides/arch-cli-reference"
+      ]
     },
     {
       "title": "Reference",

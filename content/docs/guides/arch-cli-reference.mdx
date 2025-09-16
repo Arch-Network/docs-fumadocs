@@ -1,0 +1,603 @@
+---
+title: "Arch CLI Reference Guide"
+description: "Complete reference for all Arch Network CLI commands and options"
+---
+
+This comprehensive guide covers all available commands and options in the Arch Network CLI tool.
+
+## Table of Contents
+
+- [Global Options](#global-options)
+- [Configuration Management](#configuration-management)
+- [Validator Management](#validator-management)
+- [Account Operations](#account-operations)
+- [Program Deployment](#program-deployment)
+- [Transaction Operations](#transaction-operations)
+- [Block and Network Info](#block-and-network-info)
+- [APL Token Operations](#apl-token-operations)
+- [Orchestration Commands](#orchestration-commands)
+- [Error Reference](#error-reference)
+
+## Global Options
+
+These options can be used with any command:
+
+```bash
+# Specify network mode
+arch-cli --network-mode devnet|testnet|mainnet|localnet
+
+# Use configuration profile
+arch-cli --profile <PROFILE_NAME>
+
+# Show help
+arch-cli --help
+
+# Show version
+arch-cli --version
+```
+
+:::note
+All user-facing identifiers in arch-cli (addresses, public keys, transaction IDs, block hashes) are base58.
+:::
+
+**Network Modes:**
+- `devnet`: Development network (default)
+- `testnet`: Test network
+- `mainnet`: Production network
+- `localnet`: Local development network
+
+## Configuration Management
+
+### Create Profile
+
+Create a new configuration profile for connecting to Bitcoin and Arch Network nodes:
+
+```bash
+arch-cli config create-profile <NAME> \
+    --bitcoin-node-endpoint <URL> \
+    --bitcoin-node-username <USERNAME> \
+    --bitcoin-node-password <PASSWORD> \
+    --bitcoin-network <NETWORK> \
+    --arch-node-url <URL>
+```
+
+**Arguments:**
+- `<NAME>`: Name of the profile
+- `--bitcoin-node-endpoint`: Bitcoin node endpoint URL (e.g., "http://127.0.0.1:18443")
+- `--bitcoin-node-username`: Bitcoin node RPC username
+- `--bitcoin-node-password`: Bitcoin node RPC password
+- `--bitcoin-network`: Bitcoin network ("mainnet", "testnet", or "regtest")
+- `--arch-node-url`: Arch Network node URL
+
+**Example:**
+```bash
+arch-cli config create-profile testnet \
+    --bitcoin-node-endpoint http://bitcoin-node.test.aws.archnetwork.xyz:49332 \
+    --bitcoin-node-username bitcoin \
+    --bitcoin-node-password uU1taFBTUvae96UCtA8YxAepYTFszYvYVSXK8xgzBs0 \
+    --bitcoin-network testnet \
+    --arch-node-url http://localhost:9002
+```
+
+### List Profiles
+
+List all available configuration profiles:
+
+```bash
+arch-cli config list-profiles
+```
+
+### Show Profile
+
+Display detailed information about a specific profile:
+
+```bash
+arch-cli config show-profile <NAME>
+```
+
+### Update Profile
+
+Update an existing profile's settings:
+
+```bash
+arch-cli config update-profile <NAME> \
+    [--bitcoin-node-endpoint <URL>] \
+    [--bitcoin-node-username <USERNAME>] \
+    [--bitcoin-node-password <PASSWORD>] \
+    [--bitcoin-network <NETWORK>] \
+    [--arch-node-url <URL>]
+```
+
+### Set Default Profile
+
+Set a profile as the default for all operations:
+
+```bash
+arch-cli config set-default-profile <NAME>
+```
+
+## Validator Management
+
+### Start Validator
+
+Start a local validator node:
+
+```bash
+arch-cli validator start \
+    [--bitcoin-node-endpoint <URL>] \
+    [--bitcoin-node-username <USERNAME>] \
+    [--bitcoin-node-password <PASSWORD>] \
+    [--bitcoin-network <NETWORK>] \
+    [--arch-node-url <URL>]
+```
+
+### Stop Validator
+
+Stop the running validator node:
+
+```bash
+arch-cli validator stop
+```
+
+### Validator Status
+
+Check the status of the validator node:
+
+```bash
+arch-cli validator status
+```
+
+### Validator Logs
+
+View validator logs:
+
+```bash
+arch-cli validator logs [--follow]
+```
+
+## Account Operations
+
+### Create Account
+
+Create a new account:
+
+```bash
+arch-cli account create \
+    --keypair-path <PATH> \
+    [--space <BYTES>] \
+    [--owner <PROGRAM_ID>]
+```
+
+**Arguments:**
+- `--keypair-path`: Path to the keypair file
+- `--space`: Account space in bytes (optional)
+- `--owner`: Program ID that owns the account (optional)
+
+### Airdrop
+
+Request an airdrop of lamports to an account:
+
+```bash
+arch-cli account airdrop \
+    --keypair-path <PATH> \
+    [--amount <LAMPORTS>]
+```
+
+**Arguments:**
+- `--keypair-path`: Path to the keypair file
+- `--amount`: Amount of lamports to airdrop (optional, defaults to 1 SOL)
+
+### Show Account
+
+Display account information:
+
+```bash
+arch-cli account show <PUBKEY>
+```
+
+### Show Balance
+
+Display account balance:
+
+```bash
+arch-cli account balance <PUBKEY>
+```
+
+## Program Deployment
+
+### Deploy Program
+
+Deploy a program to the network:
+
+```bash
+arch-cli program deploy <PROGRAM_PATH> \
+    [--program-id <PROGRAM_ID>] \
+    [--keypair-path <PATH>]
+```
+
+**Arguments:**
+- `<PROGRAM_PATH>`: Path to the compiled program (.so file)
+- `--program-id`: Program ID keypair path (optional)
+- `--keypair-path`: Payer keypair path (optional)
+
+### Show Program
+
+Display program information:
+
+```bash
+arch-cli program show <PROGRAM_ID>
+```
+
+### Call Program
+
+Call a program with specific instructions:
+
+```bash
+arch-cli program call <PROGRAM_ID> \
+    --accounts <ACCOUNT_PATHS> \
+    --instruction-data <DATA> \
+    [--keypair-path <PATH>]
+```
+
+**Arguments:**
+- `<PROGRAM_ID>`: Program ID to call
+- `--accounts`: Comma-separated list of account keypair paths
+- `--instruction-data`: Base64-encoded instruction data
+- `--keypair-path`: Payer keypair path (optional)
+
+## Transaction Operations
+
+### Send Transaction
+
+Send a transaction to the network:
+
+```bash
+arch-cli transaction send <TRANSACTION_PATH> \
+    [--keypair-path <PATH>]
+```
+
+### Show Transaction
+
+Display transaction information:
+
+```bash
+arch-cli transaction show <SIGNATURE>
+```
+
+### Transaction Status
+
+Check transaction status:
+
+```bash
+arch-cli transaction status <SIGNATURE>
+```
+
+## Block and Network Info
+
+### Get Block Height
+
+Get the current block height:
+
+```bash
+arch-cli get-block-height
+```
+
+### Get Block Hash
+
+Get the block hash for a specific height:
+
+```bash
+arch-cli get-block-hash <HEIGHT>
+```
+
+### Get Block
+
+Get block information:
+
+```bash
+arch-cli get-block <BLOCK_HASH>
+```
+
+### Network Info
+
+Get network information:
+
+```bash
+arch-cli network info
+```
+
+## APL Token Operations
+
+### Create Token Mint
+
+Create a new token mint:
+
+```bash
+arch-cli token create-mint \
+    --decimals <DECIMALS> \
+    --mint-authority <AUTHORITY_PATH> \
+    [--mint-keypair-path <PATH>] \
+    [--keypair-path <PATH>]
+```
+
+**Arguments:**
+- `--decimals`: Number of decimal places
+- `--mint-authority`: Path to mint authority keypair
+- `--mint-keypair-path`: Path to mint keypair (optional)
+- `--keypair-path`: Payer keypair path (optional)
+
+### Create Token Account
+
+Create a new token account:
+
+```bash
+arch-cli token create-account \
+    --mint <MINT_ADDRESS> \
+    --owner <OWNER_PATH> \
+    [--keypair-path <PATH>]
+```
+
+**Arguments:**
+- `--mint`: Token mint address
+- `--owner`: Path to owner keypair
+- `--keypair-path`: Payer keypair path (optional)
+
+### Mint Tokens
+
+Mint tokens to an account:
+
+```bash
+arch-cli token mint-to \
+    --mint <MINT_ADDRESS> \
+    --destination <DESTINATION_ADDRESS> \
+    --amount <AMOUNT> \
+    --mint-authority <AUTHORITY_PATH> \
+    [--keypair-path <PATH>]
+```
+
+**Arguments:**
+- `--mint`: Token mint address
+- `--destination`: Destination token account address
+- `--amount`: Amount of tokens to mint
+- `--mint-authority`: Path to mint authority keypair
+- `--keypair-path`: Payer keypair path (optional)
+
+### Transfer Tokens
+
+Transfer tokens between accounts:
+
+```bash
+arch-cli token transfer \
+    --source <SOURCE_ADDRESS> \
+    --destination <DESTINATION_ADDRESS> \
+    --amount <AMOUNT> \
+    --owner <OWNER_PATH> \
+    [--keypair-path <PATH>]
+```
+
+**Arguments:**
+- `--source`: Source token account address
+- `--destination`: Destination token account address
+- `--amount`: Amount of tokens to transfer
+- `--owner`: Path to owner keypair
+- `--keypair-path`: Payer keypair path (optional)
+
+### Show Token Account
+
+Display token account information:
+
+```bash
+arch-cli token show-account \
+    --mint <MINT_ADDRESS> \
+    --owner <OWNER_PATH>
+```
+
+### Show Token Mint
+
+Display token mint information:
+
+```bash
+arch-cli token show-mint <MINT_ADDRESS>
+```
+
+## Orchestration Commands
+
+### Start Orchestration
+
+Start the complete local development environment:
+
+```bash
+arch-cli orchestrate start \
+    [--bitcoin-node-endpoint <URL>] \
+    [--bitcoin-node-username <USERNAME>] \
+    [--bitcoin-node-password <PASSWORD>] \
+    [--bitcoin-network <NETWORK>]
+```
+
+### Stop Orchestration
+
+Stop the local development environment:
+
+```bash
+arch-cli orchestrate stop
+```
+
+### Orchestration Status
+
+Check the status of orchestrated services:
+
+```bash
+arch-cli orchestrate status
+```
+
+### Orchestration Logs
+
+View logs from orchestrated services:
+
+```bash
+arch-cli orchestrate logs [--service <SERVICE_NAME>]
+```
+
+## Error Reference
+
+### Common Error Codes
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| `InvalidKeypair` | Invalid keypair format | Check keypair file path and format |
+| `InsufficientFunds` | Not enough lamports | Request an airdrop or add funds |
+| `AccountNotFound` | Account doesn't exist | Create the account first |
+| `ProgramNotFound` | Program doesn't exist | Deploy the program first |
+| `InvalidInstruction` | Invalid instruction data | Check instruction format and data |
+| `NetworkError` | Network connection failed | Check network connectivity and endpoints |
+
+### Troubleshooting
+
+**Connection Issues:**
+```bash
+# Check if the node is running
+arch-cli validator status
+
+# Check network connectivity
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "is_node_ready", "params": []}'
+```
+
+**Account Issues:**
+```bash
+# Check account balance
+arch-cli account balance <PUBKEY>
+
+# Check account info
+arch-cli account show <PUBKEY>
+```
+
+**Program Issues:**
+```bash
+# Check program info
+arch-cli program show <PROGRAM_ID>
+
+# Check program accounts
+arch-cli program accounts <PROGRAM_ID>
+```
+
+## Best Practices
+
+### 1. Configuration Management
+- Use profiles for different environments
+- Keep sensitive information secure
+- Use environment variables for passwords
+
+### 2. Keypair Management
+- Store keypairs securely
+- Use different keypairs for different purposes
+- Backup important keypairs
+
+### 3. Transaction Management
+- Always check transaction status
+- Use appropriate fees
+- Handle errors gracefully
+
+### 4. Development Workflow
+- Use local development environment
+- Test thoroughly before deploying
+- Monitor logs for issues
+
+## Examples
+
+### Complete Development Setup
+
+```bash
+# 1. Start local environment
+arch-cli orchestrate start
+
+# 2. Create a profile
+arch-cli config create-profile local \
+    --bitcoin-node-endpoint http://127.0.0.1:18443 \
+    --bitcoin-node-username bitcoin \
+    --bitcoin-node-password bitcoinpass \
+    --bitcoin-network regtest \
+    --arch-node-url http://localhost:9002
+
+# 3. Set as default
+arch-cli config set-default-profile local
+
+# 4. Create and fund an account
+arch-cli account create --keypair-path ~/my_account.key
+arch-cli account airdrop --keypair-path ~/my_account.key
+
+# 5. Deploy a program
+arch-cli program deploy target/deploy/my_program.so \
+    --keypair-path ~/my_account.key
+
+# 6. Check status
+arch-cli validator status
+arch-cli get-block-height
+```
+
+### Token Operations
+
+```bash
+# 1. Create a token mint
+arch-cli token create-mint \
+    --decimals 9 \
+    --mint-authority ~/mint_authority.key \
+    --keypair-path ~/payer.key
+
+# 2. Create a token account
+arch-cli token create-account \
+    --mint <MINT_ADDRESS> \
+    --owner ~/owner.key \
+    --keypair-path ~/payer.key
+
+# 3. Mint tokens
+arch-cli token mint-to \
+    --mint <MINT_ADDRESS> \
+    --destination <TOKEN_ACCOUNT> \
+    --amount 1000000000 \
+    --mint-authority ~/mint_authority.key \
+    --keypair-path ~/payer.key
+
+# 4. Transfer tokens
+arch-cli token transfer \
+    --source <SOURCE_ACCOUNT> \
+    --destination <DESTINATION_ACCOUNT> \
+    --amount 500000000 \
+    --owner ~/owner.key \
+    --keypair-path ~/payer.key
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Quick Start Guide" href="/docs/getting-started/quick-start">
+    Get started with Arch Network development
+  </Card>
+  <Card title="Program Development" href="/docs/guides/writing-your-first-program">
+    Learn to write Arch programs
+  </Card>
+  <Card title="Token Creation" href="/docs/guides/how-to-create-a-fungible-token">
+    Create your first token
+  </Card>
+  <Card title="RPC API Reference" href="/docs/rpc/api-reference">
+    Use the RPC API directly
+  </Card>
+</Cards>
+
+## Resources
+
+<Cards>
+  <Card title="Arch Network Repository" href="https://github.com/Arch-Network/arch-network" external>
+    Source code and issues
+  </Card>
+  <Card title="Arch Examples" href="https://github.com/Arch-Network/arch-examples" external>
+    Example programs and applications
+  </Card>
+  <Card title="Community Discord" href="https://discord.gg/archnetwork" external>
+    Get help from the community
+  </Card>
+  <Card title="Arch Network Website" href="https://arch.network" external>
+    Official website and announcements
+  </Card>
+</Cards>
