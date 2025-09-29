@@ -390,7 +390,7 @@ mod tests {
 
 ```bash
 # Deploy your program
-cargo build-bpf
+cargo build-sbf
 arch-cli program deploy target/deploy/runes_swap.so
 
 # Create a swap offer
@@ -529,7 +529,7 @@ pub fn verify_offer_ownership(
 
 ```bash
 # Build the program
-cargo build-bpf
+cargo build-sbf
 
 # Deploy to local network
 arch-cli program deploy target/deploy/runes_swap.so
