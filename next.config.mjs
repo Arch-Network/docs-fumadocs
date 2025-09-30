@@ -12,6 +12,16 @@ const config = {
   reactStrictMode: true,
   outputFileTracingRoot: __dirname,
   typedRoutes: false,
+  // async redirects() {
+  //   return [
+  //     { source: '/docs/Tools-&-APIs/:path*', destination: '/docs/tools-apis/:path*', permanent: true },
+  //     { source: '/docs/Quick-Start/:path*', destination: '/docs/Quick-Start/:path*', permanent: true },
+  //     { source: '/docs/Setup-Infrastructure/:path*', destination: '/docs/setup-infrastructure/:path*', permanent: true },
+  //     { source: '/docs/DeFi-Applications/:path*', destination: '/docs/defi-applications/:path*', permanent: true },
+  //     { source: '/docs/Core-Concepts/:path*', destination: '/docs/core-concepts/:path*', permanent: true },
+  //     { source: '/docs/Help-Resources/:path*', destination: '/docs/help-resources/:path*', permanent: true },
+  //   ];
+  // },
 };
 
 export default withMDX(config);

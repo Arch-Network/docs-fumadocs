@@ -15,7 +15,7 @@ export default function HomePage() {
           View Documentation
         </Link>
         <Link
-          href="/docs/quick-start/quick-start"
+          href="/docs/Quick-Start/quick-start"
           className="px-6 py-3 border border-fd-border rounded-lg font-semibold hover:bg-fd-muted transition-colors"
         >
           Quick Start
