@@ -85,6 +85,7 @@ resource "aws_amplify_app" "fumadocs" {
         preBuild:
           commands:
             - npm ci
+            - npm run postinstall
         build:
           commands:
             - npm run build
