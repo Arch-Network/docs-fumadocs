@@ -1,6 +1,6 @@
 import { createMDX } from 'fumadocs-mdx/next';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { dirname, resolve } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -12,6 +12,14 @@ const config = {
   reactStrictMode: true,
   outputFileTracingRoot: __dirname,
   typedRoutes: false,
+  webpack: (config, { isServer }) => {
+    // Explicitly handle @ path alias for Amplify compatibility
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': resolve(__dirname, 'src'),
+    };
+    return config;
+  },
   // async redirects() {
   //   return [
   //     { source: '/docs/Tools-&-APIs/:path*', destination: '/docs/tools-apis/:path*', permanent: true },
