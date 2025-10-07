@@ -17,7 +17,7 @@ const config = {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': resolve(__dirname, 'src'),
-      '@/.source': resolve(__dirname, '.source/index.ts'),
+      '@/.source': resolve(__dirname, '.source'),
     };
     return config;
   },
