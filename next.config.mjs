@@ -15,15 +15,6 @@ const config = {
   async redirects() {
     return [
       { source: '/', destination: '/docs', permanent: true },
-      // Normalize legacy/mixed-case doc section paths to lowercase
-      { source: '/docs/Quick-Start/:path*', destination: '/docs/quick-start/:path*', permanent: true },
-      { source: '/docs/Setup-Infrastructure/:path*', destination: '/docs/setup-infrastructure/:path*', permanent: true },
-      { source: '/docs/Core-Concepts/:path*', destination: '/docs/core-concepts/:path*', permanent: true },
-      { source: '/docs/DeFi-Applications/:path*', destination: '/docs/defi-applications/:path*', permanent: true },
-      { source: '/docs/Help-Resources/:path*', destination: '/docs/help-resources/:path*', permanent: true },
-      // Handle space-containing directory name in old links
-      { source: '/docs/APIs and Tools/:path*', destination: '/docs/tools-apis/:path*', permanent: true },
-      { source: '/docs/APIs%20and%20Tools/:path*', destination: '/docs/tools-apis/:path*', permanent: true },
     ];
   },
   webpack: (config, { isServer }) => {
