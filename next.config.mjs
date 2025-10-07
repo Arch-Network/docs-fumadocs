@@ -12,6 +12,11 @@ const config = {
   reactStrictMode: true,
   outputFileTracingRoot: __dirname,
   typedRoutes: false,
+  async redirects() {
+    return [
+      { source: '/', destination: '/docs', permanent: true },
+    ];
+  },
   webpack: (config, { isServer }) => {
     // Explicitly handle @ path aliases for Amplify compatibility
     config.resolve.alias = {
