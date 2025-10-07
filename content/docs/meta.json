@@ -12,7 +12,7 @@
     {
       "title": "Quick Start",
       "pages": [
-        "quick-start/Quick-Start",
+        "quick-start/quick-start",
         "quick-start/requirements"
       ]
     },
@@ -27,8 +27,8 @@
     {
       "title": "Core Concepts",
       "pages": [
-        "Core-Concepts/bitcoin-integration",
-        "Core-Concepts/consensus"
+        "core-concepts/bitcoin-integration",
+        "core-concepts/consensus"
       ]
     },
     {
@@ -40,7 +40,7 @@
       ]
     },
     {
-      "title": "DeFi & Applications",
+      "title": "DeFi Applications",
       "pages": [
         "defi-applications/how-to-build-runes-swap",
         "defi-applications/how-to-build-lending-protocol"
@@ -49,15 +49,15 @@
     {
       "title": "APL (Arch Program Library)",
       "pages": [
-        "APL/introduction",
-        "APL/token-program",
-        "APL/associated-token-account"
+        "apl/introduction",
+        "apl/token-program",
+        "apl/associated-token-account"
       ]
     },
     {
-      "title": "Tools APIs",
+      "title": "APIs and Tools",
       "pages": [
-        "Tools-&-APIs/arch-cli-reference",
+        "tools-apis/arch-cli-reference",
         "tools-apis/sdk",
         "tools-apis/api-reference"
       ]
