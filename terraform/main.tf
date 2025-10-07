@@ -125,18 +125,7 @@ resource "aws_amplify_app" "fumadocs" {
   # Enable branch auto-deletion
   enable_branch_auto_deletion = true
 
-  # Custom rules for SPA/SSR routing
-  custom_rule {
-    source = "/<*>"
-    status = "404-200"
-    target = "/index.html"
-  }
-
-  custom_rule {
-    source = "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>"
-    status = "200"
-    target = "/index.html"
-  }
+  # Note: No custom SPA rewrites. Amplify WEB_COMPUTE handles Next.js SSR routing.
 
   iam_service_role_arn = aws_iam_role.amplify_role.arn
 
