@@ -13,10 +13,11 @@ const config = {
   outputFileTracingRoot: __dirname,
   typedRoutes: false,
   webpack: (config, { isServer }) => {
-    // Explicitly handle @ path alias for Amplify compatibility
+    // Explicitly handle @ path aliases for Amplify compatibility
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': resolve(__dirname, 'src'),
+      '@/.source': resolve(__dirname, '.source/index.ts'),
     };
     return config;
   },
