@@ -32,6 +32,64 @@ npm run build
 npm start
 ```
 
+## 🚀 Deployment
+
+This documentation site can be deployed to multiple platforms:
+
+### Vercel (Current)
+
+The site is currently deployed on Vercel. Pushes to `main` automatically trigger deployments.
+
+### AWS Amplify (Terraform + GitHub Actions) ⭐
+
+**Production-ready automated deployment system** with Infrastructure as Code.
+
+> 📘 **New to this?** Start with [`AWS_DEPLOYMENT_SUMMARY.md`](./AWS_DEPLOYMENT_SUMMARY.md) for a complete overview.
+
+**Quick Links:**
+- 📋 [Setup Checklist](./SETUP_CHECKLIST.md) - Step-by-step guide
+- 📖 [Deployment Guide](./DEPLOYMENT.md) - Detailed instructions
+- 🏗️ [Terraform Docs](./terraform/README.md) - Infrastructure details
+- ⚙️ [GitHub Actions](./github/workflows/README.md) - CI/CD workflows
+
+**Quick start:**
+
+```bash
+cd terraform
+./setup.sh
+# Follow the interactive prompts
+```
+
+**Manual deployment:**
+
+```bash
+cd terraform
+make init
+make plan
+make apply
+```
+
+See the [`terraform/`](./terraform/) directory for detailed Terraform configuration.
+
+**Cost comparison:**
+- Vercel: $0-20/month (Hobby/Pro)
+- AWS Amplify: $5-20/month
+- AWS ECS/EKS: $50-300/month (not recommended for docs)
+
+### CI/CD Pipeline
+
+GitHub Actions workflows are pre-configured for:
+- ✅ Automated testing and linting on PRs
+- ✅ Terraform validation and planning
+- ✅ Automatic deployment to AWS Amplify
+- ✅ Deployment notifications
+
+**Setup:**
+1. Add GitHub Secrets (AWS credentials, GitHub token)
+2. Merge to `main` → Automatically deploys!
+
+See [`.github/workflows/README.md`](./.github/workflows/README.md) and [`DEPLOYMENT.md`](./DEPLOYMENT.md) for details.
+
 ## 📁 Project Structure
 
 ```

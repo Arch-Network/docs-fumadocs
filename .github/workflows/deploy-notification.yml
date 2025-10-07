@@ -1,0 +1,85 @@
+name: Deployment Notifications
+
+on:
+  push:
+    branches:
+      - main
+  workflow_run:
+    workflows: ["Terraform CI/CD"]
+    types:
+      - completed
+
+jobs:
+  notify-success:
+    name: Notify Deployment Success
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get commit info
+        id: commit
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
+          echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
+
+      - name: Create deployment notification
+        run: |
+          echo "🚀 Deployment triggered for commit: ${{ github.sha }}"
+          echo "📝 Message: ${{ steps.commit.outputs.message }}"
+          echo "👤 Author: ${{ steps.commit.outputs.author }}"
+          echo "🌐 AWS Amplify will now build and deploy automatically"
+
+      # Optional: Send Slack notification
+      # - name: Send Slack notification
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: ${{ job.status }}
+      #     text: |
+      #       🚀 Deployment started for docs-fumadocs
+      #       Commit: ${{ steps.commit.outputs.message }}
+      #       Author: ${{ steps.commit.outputs.author }}
+      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+      # Optional: Send Discord notification
+      # - name: Send Discord notification
+      #   uses: sarisia/actions-status-discord@v1
+      #   with:
+      #     webhook: ${{ secrets.DISCORD_WEBHOOK }}
+      #     title: "Deployment Started"
+      #     description: |
+      #       AWS Amplify is building and deploying the documentation site
+      #       Commit: ${{ github.sha }}
+
+  notify-failure:
+    name: Notify Deployment Failure
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'failure'
+    
+    steps:
+      - name: Create issue on failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Deployment Failed',
+              body: `Deployment workflow failed for commit ${context.sha}\n\nPlease check the [workflow run](${context.payload.workflow_run.html_url}) for details.`,
+              labels: ['deployment', 'bug']
+            });
+            console.log(`Created issue: ${issue.data.html_url}`);
+
+      # Optional: Send alert
+      # - name: Send failure alert
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: failure
+      #     text: |
+      #       🚨 Deployment failed for docs-fumadocs
+      #       Check logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
