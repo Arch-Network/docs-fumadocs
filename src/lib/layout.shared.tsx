@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
-import Image from 'next/image';
+import { Logo } from '@/components/logo';
 
 /**
  * Shared layout configurations
@@ -11,18 +11,7 @@ import Image from 'next/image';
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: (
-        <>
-          <Image
-            src="/real-icon.png"
-            alt="Arch Network Logo"
-            width={24}
-            height={24}
-            style={{ marginRight: '8px' }}
-          />
-          Arch Network
-        </>
-      ),
+      title: <Logo />,
     },
     // see https://fumadocs.dev/docs/ui/navigation/links
     links: [],
