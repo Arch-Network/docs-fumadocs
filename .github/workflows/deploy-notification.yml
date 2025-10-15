@@ -22,10 +22,14 @@ jobs:
       - name: Get commit info
         id: commit
         run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
-          echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
-          echo "author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
+          COMMIT_MSG="$(git log -1 --pretty=%B)"
+          COMMIT_AUTHOR="$(git log -1 --pretty=format:%an)"
+          {
+            echo 'message<<EOF'
+            echo "$COMMIT_MSG"
+            echo EOF
+            echo "author=$COMMIT_AUTHOR"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create deployment notification
         run: |
