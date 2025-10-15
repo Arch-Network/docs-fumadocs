@@ -132,7 +132,8 @@ echo "Token account: $TOKEN_ACCOUNT"
 arch-cli token mint "$MINT" 1000000000 \
   --account-address "$TOKEN_ACCOUNT" \
   --authority ~/DEMO_KEYS/mint_authority.key \
-  --auto-create-ata
+  --auto-create-ata \
+  --keypair-path ~/DEMO_KEYS/payer.key
 
 # Check the token account balance
 arch-cli token balance "$TOKEN_ACCOUNT"
@@ -319,7 +320,16 @@ arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner
 **Invalid Authority:**
 ```bash
 # Verify you're using the correct authority keypair
-arch-cli token show-mint $MINT
+arch-cli token show-mint "$MINT"
+
+# If you see an authority mismatch when minting:
+# 1) Verify the mint's current Mint Authority matches your keypair's pubkey
+NO_COLOR=1 arch-cli token show-mint "$MINT" | awk -F': ' '/^Mint Authority:/{print $2}'
+# 2) If wrong, either switch to the correct keypair or update the authority:
+arch-cli token set-authority "$MINT" \
+  --authority-type mint \
+  --new-authority <NEW_AUTHORITY_PUBKEY_BASE58> \
+  --current-authority ~/DEMO_KEYS/mint_authority.key
 ```
 
 **Account Not Found:**
