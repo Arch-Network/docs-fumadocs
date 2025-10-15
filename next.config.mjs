@@ -12,14 +12,19 @@ const config = {
   reactStrictMode: true,
   outputFileTracingRoot: __dirname,
   typedRoutes: false,
-  webpack: (webpackConfig) => {
-    // Ensure TS path alias '@/*' resolves in webpack builds (e.g., on Amplify)
-    webpackConfig.resolve = webpackConfig.resolve || {};
-    webpackConfig.resolve.alias = {
-      ...(webpackConfig.resolve.alias || {}),
+  async redirects() {
+    return [
+      { source: '/', destination: '/docs', permanent: true },
+    ];
+  },
+  webpack: (config, { isServer }) => {
+    // Explicitly handle @ path aliases for Amplify compatibility
+    config.resolve.alias = {
+      ...config.resolve.alias,
       '@': resolve(__dirname, 'src'),
+      '@/.source': resolve(__dirname, '.source'),
     };
-    return webpackConfig;
+    return config;
   },
 };
 
