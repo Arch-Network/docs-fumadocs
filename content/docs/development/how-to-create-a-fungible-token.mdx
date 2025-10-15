@@ -66,7 +66,8 @@ arch-cli config create-profile local \
     --bitcoin-node-username bitcoin \
     --bitcoin-node-password bitcoinpass \
     --bitcoin-network regtest \
-    --arch-node-url http://localhost:9002
+    --arch-node-url http://localhost:9002 \
+    --titan-url http://127.0.0.1:3030
 
 # Set as default profile
 arch-cli config set-default-profile local
@@ -111,28 +112,30 @@ openssl rand -out ~/DEMO_KEYS/token_account_owner.key 32
 
 # Create a token account for the owner
 arch-cli token create-account \
-  --mint $MINT \
+  --mint "$MINT" \
   --owner ~/DEMO_KEYS/token_account_owner.key \
   --keypair-path ~/DEMO_KEYS/payer.key
 
-# Save the token account address
-export TOKEN_ACCOUNT=$(NO_COLOR=1 arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner.key | awk -F': ' '/^Address:/{print $2}')
+# Save the token account address from the command output
+export TOKEN_ACCOUNT=$(NO_COLOR=1 arch-cli token create-account \
+  --mint "$MINT" \
+  --owner ~/DEMO_KEYS/token_account_owner.key \
+  --keypair-path ~/DEMO_KEYS/payer.key \
+  | awk -F': ' '/^Account Address:/{print $2; exit}')
 echo "Token account: $TOKEN_ACCOUNT"
 ```
 
 ### Step 6: Mint Tokens
 
 ```bash
-# Mint 1000 tokens to the token account
-arch-cli token mint-to \
-  --mint $MINT \
-  --destination $TOKEN_ACCOUNT \
-  --amount 1000000000 \
-  --mint-authority ~/DEMO_KEYS/mint_authority.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+# Mint 1,000 tokens to the token account (with 6 decimals)
+arch-cli token mint "$MINT" 1000000000 \
+  --account-address "$TOKEN_ACCOUNT" \
+  --authority ~/DEMO_KEYS/mint_authority.key \
+  --auto-create-ata
 
 # Check the token account balance
-arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner.key
+arch-cli token balance "$TOKEN_ACCOUNT"
 ```
 
 ## Advanced Token Operations
@@ -143,19 +146,19 @@ arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner
 # Create a second token account for transfers
 openssl rand -out ~/DEMO_KEYS/recipient.key 32
 arch-cli token create-account \
-  --mint $MINT \
+  --mint "$MINT" \
   --owner ~/DEMO_KEYS/recipient.key \
   --keypair-path ~/DEMO_KEYS/payer.key
 
-export RECIPIENT_ACCOUNT=$(NO_COLOR=1 arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/recipient.key | awk -F': ' '/^Address:/{print $2}')
+export RECIPIENT_ACCOUNT=$(NO_COLOR=1 arch-cli token create-account \
+  --mint "$MINT" \
+  --owner ~/DEMO_KEYS/recipient.key \
+  --keypair-path ~/DEMO_KEYS/payer.key \
+  | awk -F': ' '/^Account Address:/{print $2; exit}')
 
 # Transfer 100 tokens (100000000 units with 6 decimals)
-arch-cli token transfer \
-  --source $TOKEN_ACCOUNT \
-  --destination $RECIPIENT_ACCOUNT \
-  --amount 100000000 \
-  --owner ~/DEMO_KEYS/token_account_owner.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+arch-cli token transfer "$TOKEN_ACCOUNT" "$RECIPIENT_ACCOUNT" 100000000 \
+  --owner ~/DEMO_KEYS/token_account_owner.key
 ```
 
 ### Approve Delegation
@@ -164,28 +167,21 @@ arch-cli token transfer \
 # Generate a delegate keypair
 openssl rand -out ~/DEMO_KEYS/delegate.key 32
 
-# Approve the delegate to spend 50 tokens
-arch-cli token approve \
-  --account $TOKEN_ACCOUNT \
-  --delegate ~/DEMO_KEYS/delegate.key \
-  --amount 50000000 \
-  --owner ~/DEMO_KEYS/token_account_owner.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+# Approve the delegate to spend 50 tokens (use delegate's base58 public key)
+export DELEGATE_PUBKEY=<DELEGATE_PUBKEY_BASE58>
+arch-cli token approve "$TOKEN_ACCOUNT" "$DELEGATE_PUBKEY" 50000000 \
+  --owner ~/DEMO_KEYS/token_account_owner.key
 
-# Check the delegation
-arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner.key
+# Check the balance
+arch-cli token balance "$TOKEN_ACCOUNT"
 ```
 
 ### Transfer from Delegate
 
 ```bash
-# Transfer tokens using the delegate
-arch-cli token transfer-from \
-  --source $TOKEN_ACCOUNT \
-  --destination $RECIPIENT_ACCOUNT \
-  --amount 25000000 \
-  --delegate ~/DEMO_KEYS/delegate.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+# Transfer tokens using the delegate as the signer
+arch-cli token transfer "$TOKEN_ACCOUNT" "$RECIPIENT_ACCOUNT" 25000000 \
+  --owner ~/DEMO_KEYS/delegate.key
 ```
 
 ### Burn Tokens
@@ -205,27 +201,20 @@ arch-cli token burn \
 
 ```bash
 # Freeze the token account (prevents transfers)
-arch-cli token freeze-account \
-  --account $TOKEN_ACCOUNT \
-  --mint-authority ~/DEMO_KEYS/mint_authority.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+arch-cli token freeze-account "$TOKEN_ACCOUNT" \
+  --authority ~/DEMO_KEYS/mint_authority.key
 
 # Thaw the account (re-enable transfers)
-arch-cli token thaw-account \
-  --account $TOKEN_ACCOUNT \
-  --mint-authority ~/DEMO_KEYS/mint_authority.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+arch-cli token thaw-account "$TOKEN_ACCOUNT" \
+  --authority ~/DEMO_KEYS/freeze_authority.key
 ```
 
 ### Close Token Account
 
 ```bash
 # Close the token account (reclaims rent)
-arch-cli token close-account \
-  --account $TOKEN_ACCOUNT \
-  --destination ~/DEMO_KEYS/payer.key \
-  --owner ~/DEMO_KEYS/token_account_owner.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+arch-cli token close-account "$TOKEN_ACCOUNT" <DESTINATION_PUBKEY> \
+  --owner ~/DEMO_KEYS/token_account_owner.key
 ```
 
 ## Multisig Token Operations
@@ -238,33 +227,39 @@ openssl rand -out ~/DEMO_KEYS/authority1.key 32
 openssl rand -out ~/DEMO_KEYS/authority2.key 32
 openssl rand -out ~/DEMO_KEYS/authority3.key 32
 
-# Create a multisig mint (requires 2 of 3 signatures)
-arch-cli token create-multisig-mint \
-  --decimals 6 \
-  --authorities ~/DEMO_KEYS/authority1.key,~/DEMO_KEYS/authority2.key,~/DEMO_KEYS/authority3.key \
-  --threshold 2 \
-  --keypair-path ~/DEMO_KEYS/payer.key
-
-export MULTISIG_MINT=$(NO_COLOR=1 arch-cli token show-multisig-mint --authorities ~/DEMO_KEYS/authority1.key,~/DEMO_KEYS/authority2.key,~/DEMO_KEYS/authority3.key | awk -F': ' '/^Address:/{print $2}')
+# Create a multisig (2-of-3)
+export MULTISIG=$(NO_COLOR=1 arch-cli token create-multisig 2 \
+  --signers ~/DEMO_KEYS/authority1.key,~/DEMO_KEYS/authority2.key,~/DEMO_KEYS/authority3.key \
+  --keypair-path ~/DEMO_KEYS/payer.key | awk -F': ' '/^Multisig Address:/{print $2; exit}')
 ```
 
 ### Mint with Multisig
 
 ```bash
-# Create a token account for the multisig mint
+# Set the mint's authority to the multisig address
+arch-cli token set-authority "$MINT" \
+  --authority-type mint \
+  --new-authority "$MULTISIG" \
+  --current-authority ~/DEMO_KEYS/mint_authority.key
+
+# Create a token account for the recipient
 arch-cli token create-account \
-  --mint $MULTISIG_MINT \
+  --mint "$MINT" \
   --owner ~/DEMO_KEYS/token_account_owner.key \
   --keypair-path ~/DEMO_KEYS/payer.key
 
-export MULTISIG_ACCOUNT=$(NO_COLOR=1 arch-cli token show-account --mint $MULTISIG_MINT --owner ~/DEMO_KEYS/token_account_owner.key | awk -F': ' '/^Address:/{print $2}')
+export MULTISIG_ACCOUNT=$(NO_COLOR=1 arch-cli token create-account \
+  --mint "$MINT" \
+  --owner ~/DEMO_KEYS/token_account_owner.key \
+  --keypair-path ~/DEMO_KEYS/payer.key \
+  | awk -F': ' '/^Account Address:/{print $2; exit}')
 
-# Mint tokens using multisig (requires 2 signatures)
-arch-cli token mint-to-multisig \
-  --mint $MULTISIG_MINT \
-  --destination $MULTISIG_ACCOUNT \
-  --amount 1000000000 \
-  --authorities ~/DEMO_KEYS/authority1.key,~/DEMO_KEYS/authority2.key \
+# Mint using multisig (provide multisig address and two signer keypairs)
+arch-cli token mint "$MINT" 1000000000 \
+  --account-address "$MULTISIG_ACCOUNT" \
+  --authority ~/DEMO_KEYS/authority1.key \
+  --multisig "$MULTISIG" \
+  --signers ~/DEMO_KEYS/authority1.key,~/DEMO_KEYS/authority2.key \
   --keypair-path ~/DEMO_KEYS/payer.key
 ```
 
@@ -305,12 +300,9 @@ for i in {1..3}; do
     --keypair-path ~/DEMO_KEYS/payer.key
 done
 
-# Batch transfer to multiple accounts
-arch-cli token batch-transfer \
-  --source $TOKEN_ACCOUNT \
-  --destinations ~/DEMO_KEYS/recipient1.key,~/DEMO_KEYS/recipient2.key,~/DEMO_KEYS/recipient3.key \
-  --amounts 100000000,200000000,300000000 \
-  --owner ~/DEMO_KEYS/token_account_owner.key \
+# Batch transfer using a JSON file
+# Example transfers.json: [{"source_account":"$TOKEN_ACCOUNT","destination_account":"<RECIPIENT_ACCOUNT>","amount":100000000,"owner_keypair_path":"~/DEMO_KEYS/token_account_owner.key"}]
+arch-cli token batch-transfer ./transfers.json \
   --keypair-path ~/DEMO_KEYS/payer.key
 ```
 
@@ -340,13 +332,16 @@ arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner
 
 ```bash
 # Show detailed token information
-arch-cli token show-mint $MINT --verbose
+arch-cli token show-mint "$MINT"
 
-# Show account details with history
-arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner.key --history
+# Show account details
+arch-cli token show-account "$TOKEN_ACCOUNT"
 
 # Check transaction status
-arch-cli get-transaction-report <TRANSACTION_ID>
+arch-cli tx confirm <SIGNATURE>
+
+# View program logs
+arch-cli tx log-program-messages <SIGNATURE>
 ```
 
 ## Best Practices
