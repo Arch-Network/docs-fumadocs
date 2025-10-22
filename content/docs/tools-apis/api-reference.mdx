@@ -52,24 +52,31 @@ All RPC requests must be sent as HTTP `POST` requests with:
 - [`get_account_address`](#get_account_address) - Get Bitcoin address for account
 - [`get_program_accounts`](#get_program_accounts) - Query accounts by program ID
 - [`get_all_accounts`](#get_all_accounts) - Get all account public keys
+- [`get_multiple_accounts`](#get_multiple_accounts) - Get multiple accounts in one call
 
 ### Transaction Operations
 - [`send_transaction`](#send_transaction) - Submit a single transaction
 - [`send_transactions`](#send_transactions) - Submit multiple transactions
 - [`get_processed_transaction`](#get_processed_transaction) - Get transaction status and details
 - [`get_transaction_report`](#get_transaction_report) - Get detailed transaction processing report
+- [`request_airdrop`](#request_airdrop) - Request faucet airdrop to an address
+- [`create_account_with_faucet`](#create_account_with_faucet) - Build a faucet-funded create account tx
+- [`recent_transactions`](#recent_transactions) - List recent transactions
+- [`get_transactions_by_block`](#get_transactions_by_block) - List transactions for a block
+- [`get_transactions_by_ids`](#get_transactions_by_ids) - Fetch transactions by ids
 
 ### Block Operations
 - [`get_block`](#get_block) - Get block by hash
 - [`get_block_count`](#get_block_count) - Get current block count
 - [`get_block_hash`](#get_block_hash) - Get block hash by height
 - [`get_best_block_hash`](#get_best_block_hash) - Get latest block hash
+- [`get_best_finalized_block_hash`](#get_best_finalized_block_hash) - Get latest finalized block hash
+- [`get_block_by_height`](#get_block_by_height) - Get block by height
 
 ### Network Operations
 - [`is_node_ready`](#is_node_ready) - Check node readiness
-- [`get_peers`](#get_peers) - Get connected network peers
-- [`get_current_state`](#get_current_state) - Get current validator node state
 - [`get_network_pubkey`](#get_network_pubkey) - Get the network verifying key
+- [`check_pre_anchor_conflict`](#check_pre_anchor_conflict) - Check for pre-anchor conflicts
 
 ### System Operations
 - [`get_version`](#get_version) - Get node version information
@@ -139,6 +146,47 @@ curl -X POST http://localhost:9002 \
   }'
 ```
 
+### get_multiple_accounts
+
+Retrieves info for multiple accounts in one call.
+
+**Parameters:**
+1. `pubkeys` - Array of account public keys (string-serialized)
+
+**Returns:** Array of account information objects.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_multiple_accounts",
+    "params": [["<pubkey1>", "<pubkey2>"]]
+  }'
+```
+
+### get_all_accounts
+
+Lists all known account public keys.
+
+**Parameters:** None
+
+**Returns:** Array of public keys (hex strings).
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_all_accounts",
+    "params": []
+  }'
+```
+
 ## Transaction Operations
 
 ### send_transaction
@@ -162,6 +210,27 @@ curl -X POST http://localhost:9002 \
   }'
 ```
 
+### send_transactions
+
+Submits multiple transactions to the network for processing in a single request.
+
+**Parameters:**
+1. `transactions` - Array of base64-encoded transaction data
+
+**Returns:** Array of transaction signature strings.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "send_transactions",
+    "params": [["base64_tx_1","base64_tx_2"]]
+  }'
+```
+
 ### get_processed_transaction
 
 Retrieves the status and details of a processed transaction.
@@ -180,6 +249,181 @@ curl -X POST http://localhost:9002 \
     "id": 1,
     "method": "get_processed_transaction",
     "params": ["transaction_signature_here"]
+  }'
+```
+
+### get_transaction_report
+
+Retrieves a detailed processing report for a transaction.
+
+**Parameters:**
+1. `txid` - Transaction id (hash) string
+
+**Returns:** Stringified report details.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_transaction_report",
+    "params": ["<txid>"]
+  }'
+```
+
+### get_arch_txid_from_btc_txid
+
+Looks up the Arch transaction id corresponding to a given Bitcoin txid.
+
+**Parameters:**
+1. `btc_txid` - Bitcoin transaction id (string)
+
+**Returns:** Arch txid string or null if not found.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_arch_txid_from_btc_txid",
+    "params": ["<btc_txid>"]
+  }'
+```
+
+### get_latest_tx_using_account
+
+Retrieves the most recent Arch txid that touched the specified account.
+
+**Parameters:**
+1. `account_pubkey` - Account public key (hex string)
+
+**Returns:** Arch txid string or null if none found.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_latest_tx_using_account",
+    "params": ["<account_pubkey>"]
+  }'
+```
+
+### request_airdrop
+
+Requests 1_000_000_000 lamports from the local faucet to the specified account.
+
+**Parameters:**
+1. `pubkey` - Recipient account public key (string-serialized)
+
+**Returns:** Transaction signature string.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "request_airdrop",
+    "params": ["<recipient_pubkey>"]
+  }'
+```
+
+### create_account_with_faucet
+
+Builds a signed RuntimeTransaction from the faucet to create a new account for the provided public key.
+
+Note: This returns a transaction object; submit it using `send_transaction`.
+
+**Parameters:**
+1. `pubkey` - New account public key (string-serialized)
+
+**Returns:** A transaction object with `version`, `signatures`, and `message` fields.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "create_account_with_faucet",
+    "params": ["<new_account_pubkey>"]
+  }'
+```
+
+### recent_transactions
+
+Retrieves most recent transactions with optional pagination and account filter.
+
+**Parameters (object):**
+- `limit` (optional, number)
+- `offset` (optional, number)
+- `account` (optional, string-serialized pubkey)
+
+**Returns:** Array of processed transactions.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "recent_transactions",
+    "params": [{"limit": 10}]
+  }'
+```
+
+### get_transactions_by_block
+
+Lists transactions for a specific block with optional pagination and account filter.
+
+**Parameters (object):**
+- `block_hash` (string, required)
+- `limit` (optional, number)
+- `offset` (optional, number)
+- `account` (optional, string-serialized pubkey)
+
+**Returns:** Array of processed transactions.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_transactions_by_block",
+    "params": [{"block_hash": "<block_hash>", "limit": 25}]
+  }'
+```
+
+### get_transactions_by_ids
+
+Fetches transactions by their txids.
+
+**Parameters (object):**
+- `txids` (array of strings, required)
+
+**Returns:** Array of processed transactions.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_transactions_by_ids",
+    "params": [{"txids": ["<txid1>", "<txid2>"]}]
   }'
 ```
 
@@ -226,6 +470,90 @@ curl -X POST http://localhost:9002 \
   }'
 ```
 
+### get_block_hash
+
+Retrieves the block hash for a given block height.
+
+**Parameters:**
+1. `block_height` - Block height (number)
+
+**Returns:** Block hash string.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_block_hash",
+    "params": [12345]
+  }'
+```
+
+### get_block_by_height
+
+Retrieves block information by block height.
+
+**Parameters:**
+1. `block_height` - Block height (number)
+
+Optionally, a second parameter may request the full block object.
+
+**Returns:** Block information object.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_block_by_height",
+    "params": [12345]
+  }'
+```
+
+### get_best_block_hash
+
+Gets the latest (tip) block hash.
+
+**Parameters:** None
+
+**Returns:** Block hash string.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_best_block_hash",
+    "params": []
+  }'
+```
+
+### get_best_finalized_block_hash
+
+Gets the latest finalized block hash.
+
+**Parameters:** None
+
+**Returns:** Block hash string.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_best_finalized_block_hash",
+    "params": []
+  }'
+```
+
 ## Network Operations
 
 ### is_node_ready
@@ -264,6 +592,69 @@ curl -X POST http://localhost:9002 \
     "jsonrpc": "2.0",
     "id": 1,
     "method": "get_peers",
+    "params": []
+  }'
+```
+
+### get_network_pubkey
+
+Returns the validator's network verifying key (group x-pubkey).
+
+**Parameters:** None
+
+**Returns:** Hex-encoded x-only public key string.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_network_pubkey",
+    "params": []
+  }'
+```
+
+### check_pre_anchor_conflict
+
+Checks for pre-anchor conflicts for a set of accounts.
+
+**Parameters:**
+1. `accounts` - Array of account public keys (string-serialized)
+
+**Returns:** Boolean indicating whether a conflict exists.
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "check_pre_anchor_conflict",
+    "params": [["<pubkey1>", "<pubkey2>"]]
+  }'
+```
+
+## System Operations
+
+### get_version
+
+Retrieves node version information.
+
+**Parameters:** None
+
+**Returns:** Object containing `version` and `feature_set` (optional).
+
+**Example:**
+```bash
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "get_version",
     "params": []
   }'
 ```

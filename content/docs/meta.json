@@ -40,6 +40,17 @@
       ]
     },
     {
+      "title": "Program",
+      "pages": [
+        "program/program",
+        "program/entrypoint",
+        "program/instructions-and-messages",
+        "program/accounts",
+        "program/cpi",
+        "program/syscall"
+      ]
+    },
+    {
       "title": "DeFi Applications",
       "pages": [
         "defi-applications/how-to-build-runes-swap",
@@ -55,11 +66,23 @@
       ]
     },
     {
+      "title": "SDK",
+      "pages": [
+        "sdk/index",
+        "sdk/typescript/getting-started"
+      ]
+    },
+    {
       "title": "APIs and Tools",
       "pages": [
         "tools-apis/arch-cli-reference",
-        "tools-apis/sdk",
         "tools-apis/api-reference"
+      ]
+    },
+    {
+      "title": "Reference",
+      "pages": [
+        "reference/rpc/index"
       ]
     },
     {

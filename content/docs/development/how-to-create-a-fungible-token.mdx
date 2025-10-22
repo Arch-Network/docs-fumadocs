@@ -332,6 +332,54 @@ arch-cli token set-authority "$MINT" \
   --current-authority ~/DEMO_KEYS/mint_authority.key
 ```
 
+### Verify Authority Before Minting
+
+```bash
+# Derive pubkeys without funding (amount 0 prints the public key)
+OWNER_PUB=$(NO_COLOR=1 arch-cli account airdrop --keypair-path ~/DEMO_KEYS/token_account_owner.key --amount 0 2>/dev/null | awk -F': ' '/^  Public key:/{print $2}')
+MINT_AUTH_PUB=$(NO_COLOR=1 arch-cli account airdrop --keypair-path ~/DEMO_KEYS/mint_authority.key --amount 0 2>/dev/null | awk -F': ' '/^  Public key:/{print $2}')
+CHAIN_MINT_AUTH=$(NO_COLOR=1 arch-cli token show-mint "$MINT" | awk -F': ' '/^Mint Authority:/{print $2}')
+
+echo "Owner: $OWNER_PUB"
+echo "MintAuthKey: $MINT_AUTH_PUB"
+echo "ChainMintAuth: $CHAIN_MINT_AUTH"
+
+# Must match before minting
+test "$MINT_AUTH_PUB" = "$CHAIN_MINT_AUTH" || echo "Mint authority mismatch: rotate or recreate mint."
+```
+
+### Reset Demo Keys (Dev Only)
+
+```bash
+# Destroys local keys; only do this for demo/dev mints
+rm -rf ~/DEMO_KEYS
+mkdir -p ~/DEMO_KEYS
+
+# Recreate stable keys ONCE (don’t regenerate after mint creation)
+openssl rand -out ~/DEMO_KEYS/payer.key 32
+openssl rand -out ~/DEMO_KEYS/mint_authority.key 32
+openssl rand -out ~/DEMO_KEYS/mint.key 32
+openssl rand -out ~/DEMO_KEYS/token_account_owner.key 32
+
+# Fund payer
+arch-cli account airdrop --keypair-path ~/DEMO_KEYS/payer.key
+
+# Recreate mint (uses the mint_authority you just generated)
+arch-cli token create-mint \
+  --decimals 6 \
+  --mint-authority ~/DEMO_KEYS/mint_authority.key \
+  --mint-keypair-path ~/DEMO_KEYS/mint.key \
+  --keypair-path  ~/DEMO_KEYS/payer.key
+
+export MINT=$(NO_COLOR=1 arch-cli token show-mint ~/DEMO_KEYS/mint.key | awk -F': ' '/^Address:/{print $2}')
+```
+
+### Key Roles
+
+- Payer (`--keypair-path`): pays fees; required when creating ATAs
+- Mint authority (`--authority`): must equal on-chain Mint Authority
+- Owner (`--account-address`): owner’s base58 pubkey; CLI derives/creates the ATA
+
 **Account Not Found:**
 ```bash
 # Ensure the token account exists
