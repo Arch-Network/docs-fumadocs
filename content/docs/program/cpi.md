@@ -1,4 +1,6 @@
-# Cross-Program Invocation (CPI)
+---
+title: "Cross-Program Invocation (CPI)"
+---
 
 Cross-Program Invocation (CPI) lets one Arch program call another program within the same transaction. CPI enables composition, modularity, and reuse of on-chain logic.
 

@@ -1,4 +1,6 @@
-# Account Guide
+---
+title: "Account Guide"
+---
 
 > For the core account structure and data types, see [Account Structure](../sdk/account.md).
 

@@ -1,4 +1,6 @@
-# Instructions and Messages
+---
+title: "Instructions and Messages"
+---
 
 Instructions and messages are fundamental components of Arch's transaction processing system that enable communication between clients and [programs]. They form the basis for all state changes and interactions within the Arch network.
 

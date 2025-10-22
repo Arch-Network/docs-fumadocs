@@ -1,4 +1,6 @@
-# Program
+---
+title: "Program"
+---
 
 A program is a special kind of [account] that contains executable [eBPF] bytecode, denoted by the `Account.is_executable: true` field. This allows an account to receive arbitrary [instruction] data via a [transaction] to be processed by the runtime.
 

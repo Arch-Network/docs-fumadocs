@@ -1,4 +1,6 @@
-# Entrypoint and Handler Functions
+---
+title: "Entrypoint and Handler Functions"
+---
 
 ## Entrypoint
 

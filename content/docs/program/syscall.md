@@ -1,4 +1,6 @@
-# Syscalls
+---
+title: "Syscalls"
+---
 
 A syscall is a function that can be used to obtain information from the underlying virtual machine.
 
