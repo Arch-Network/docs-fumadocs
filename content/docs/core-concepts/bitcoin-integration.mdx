@@ -31,6 +31,13 @@ flowchart TB
     P1 --- PN
 ```
 
+**Diagram components**
+
+- **Bitcoin Network (Bitcoin Node)**: Canonical source of blocks, transactions, and UTXOs; all confirmations and proofs ultimately derive from it.
+- **Titan Client**: Bridges the Bitcoin node and Arch leader by streaming headers, transactions, and UTXO proofs so the leader maintains an up‑to‑date Bitcoin view.
+- **Leader Node (Bitcoin Integration)**: Orchestrates verification and submission of Bitcoin‑related operations, coordinating validation and finalization across the network.
+- **Validator Network (Programs)**: Executes programs and participates in consensus; validators verify state transitions and provide threshold signatures for Bitcoin‑anchored actions.
+
 ## Core Components
 
 ### 1. UTXO Management
@@ -53,6 +60,12 @@ flowchart LR
     OutIdx --> Meta
     Meta --- State
 ```
+
+**Diagram components**
+
+- **TransactionID & OutputIndex**: Together identify a specific Bitcoin UTXO; they select the exact output being referenced.
+- **UtxoMeta**: Arch‑side record of the UTXO (txid, vout, amount, script, confirmations) used for ownership, spend checks, and proof verification.
+- **ProgramState**: Program‑maintained state linked to UTXOs; updates when UTXOs are created or spent to reflect application logic.
 
 ```rust
 // UTXO Metadata Structure
@@ -109,6 +122,14 @@ flowchart LR
     style Network fill:#f9f9f9,stroke:#333,stroke-width:2px
 ```
 
+**Diagram components**
+
+- **Arch Program**: Issues reads and submissions related to Bitcoin state and transactions as part of program execution.
+- **Bitcoin RPC Interface**: Authenticates and routes requests to the configured Bitcoin node, applying timeouts and network settings from configuration.
+- **Bitcoin Node**: Serves chain data and accepts transaction broadcasts; its view anchors program interactions to Bitcoin consensus.
+- **Configuration**: Endpoint, credentials, wallet, network, and timeouts that control RPC behavior and security boundaries.
+- **Bitcoin Network**: The broader peer‑to‑peer network the node participates in, providing consensus and propagation for transactions and blocks.
+
 Programs can interact with Bitcoin through RPC calls:
 
 ```rust
@@ -148,6 +169,13 @@ sequenceDiagram
     Leader->>Bitcoin: Submit TX
     Bitcoin-->>Program: Confirmation
 ```
+
+**Diagram components**
+
+- **Program**: Constructs intents and requests UTXO creation or spending based on application logic.
+- **Leader**: Validates requests, aggregates threshold signatures, and submits the finalized transaction to Bitcoin.
+- **Validator**: Independently verifies inputs/outputs and signs if rules are satisfied, contributing to threshold signing.
+- **Bitcoin**: Confirms the transaction on‑chain and provides observable finality that programs can rely on.
 
 ### 1. Transaction Creation
 
