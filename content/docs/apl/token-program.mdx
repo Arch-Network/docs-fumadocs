@@ -388,7 +388,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create mint account
     let mint_account = client.create_account(
         CreateAccountParams {
-            space: 82, // Mint account size
+            space: apl_token::state::Mint::LEN, // Mint account size
             owner: apl_token::id(),
             payer: &payer,
         }
@@ -426,7 +426,7 @@ async fn create_token_account(
     // Create account
     let account = client.create_account(
         CreateAccountParams {
-            space: 165, // Token account size
+            space: apl_token::state::Account::LEN, // Token account size
             owner: apl_token::id(),
             payer,
         }
