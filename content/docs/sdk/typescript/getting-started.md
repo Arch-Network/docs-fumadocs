@@ -1,6 +1,6 @@
 # Getting Started with the TypeScript SDK
 
-This guide will walk you through setting up and using the Arch Network TypeScript SDK (developed by Saturn) to build your first application.
+This guide will walk you through setting up and using the Arch Network TypeScript SDK to build your first application.
 
 > **Note**: The Arch TypeScript SDK is a low-level SDK that provides direct RPC access to Arch nodes. It does not include high-level abstractions like transaction builders or wallet management.
 
@@ -20,8 +20,8 @@ mkdir my-arch-app
 cd my-arch-app
 npm init -y
 
-# Install the Saturn TypeScript SDK
-npm install @saturnbtcio/arch-sdk
+# Install the Arch TypeScript SDK
+npm install @arch-network/arch-sdk
 
 # Install TypeScript (optional but recommended)
 npm install -D typescript @types/node
@@ -32,13 +32,13 @@ npx tsc --init
 
 ```bash
 # Using npm
-npm install @saturnbtcio/arch-sdk
+npm install @arch-network/arch-sdk
 
 # Using yarn
-yarn add @saturnbtcio/arch-sdk
+yarn add @arch-network/arch-sdk
 
 # Using pnpm
-pnpm add @saturnbtcio/arch-sdk
+pnpm add @arch-network/arch-sdk
 ```
 
 ## Your First Connection
@@ -46,7 +46,7 @@ pnpm add @saturnbtcio/arch-sdk
 Create a file named `connect.ts` (or `connect.js` for JavaScript):
 
 ```typescript
-import { RpcConnection } from '@saturnbtcio/arch-sdk';
+import { RpcConnection } from '@arch-network/arch-sdk';
 
 async function main() {
   // Connect to local validator
@@ -110,7 +110,7 @@ Connecting to Arch node at http://localhost:9002...
 The SDK provides utilities for creating accounts using secp256k1 cryptography:
 
 ```typescript
-import { RpcConnection, ArchConnection } from '@saturnbtcio/arch-sdk';
+import { RpcConnection, ArchConnection } from '@arch-network/arch-sdk';
 
 async function createAccount() {
   const connection = new RpcConnection('http://localhost:9002');
@@ -133,7 +133,7 @@ createAccount().catch(console.error);
 ### Create Account with Faucet Funding
 
 ```typescript
-import { RpcConnection } from '@saturnbtcio/arch-sdk';
+import { RpcConnection } from '@arch-network/arch-sdk';
 import { randomBytes } from 'node:crypto';
 
 // Helper function to wait for a specified time
@@ -242,7 +242,7 @@ createAndFundAccount();
 ## Reading Account Information
 
 ```typescript
-import { RpcConnection } from '@saturnbtcio/arch-sdk';
+import { RpcConnection } from '@arch-network/arch-sdk';
 
 async function readAccount() {
   const connection = new RpcConnection('http://localhost:9002');
@@ -269,8 +269,8 @@ async function readAccount() {
 The SDK uses a low-level message format for transactions:
 
 ```typescript
-import { RpcConnection, InstructionUtil, MessageUtil, PubkeyUtil } from '@saturnbtcio/arch-sdk';
-import type { Message, Instruction } from '@saturnbtcio/arch-sdk';
+import { RpcConnection, InstructionUtil, MessageUtil, PubkeyUtil } from '@arch-network/arch-sdk';
+import type { Message, Instruction } from '@arch-network/arch-sdk';
 
 // Create a simple instruction
 const instruction: Instruction = {
@@ -301,8 +301,8 @@ console.log('Serialized message:', serializedMessage);
 To send transactions, you need to create a `RuntimeTransaction`:
 
 ```typescript
-import { RpcConnection, PubkeyUtil } from '@saturnbtcio/arch-sdk';
-import type { RuntimeTransaction, SanitizedMessage } from '@saturnbtcio/arch-sdk';
+import { RpcConnection, PubkeyUtil } from '@arch-network/arch-sdk';
+import type { RuntimeTransaction, SanitizedMessage } from '@arch-network/arch-sdk';
 
 async function sendTransaction() {
   const connection = new RpcConnection('http://localhost:9002');
@@ -348,7 +348,7 @@ async function sendTransaction() {
 ## Querying Blocks
 
 ```typescript
-import { RpcConnection } from '@saturnbtcio/arch-sdk';
+import { RpcConnection } from '@arch-network/arch-sdk';
 
 async function queryBlocks() {
   const connection = new RpcConnection('http://localhost:9002');
@@ -371,7 +371,7 @@ async function queryBlocks() {
 ## Get Processed Transaction
 
 ```typescript
-import { RpcConnection } from '@saturnbtcio/arch-sdk';
+import { RpcConnection } from '@arch-network/arch-sdk';
 
 async function getTransaction(txId: string) {
   const connection = new RpcConnection('http://localhost:9002');
@@ -394,7 +394,7 @@ async function getTransaction(txId: string) {
 ## Get Program Accounts
 
 ```typescript
-import { RpcConnection } from '@saturnbtcio/arch-sdk';
+import { RpcConnection } from '@arch-network/arch-sdk';
 
 async function getProgramAccounts() {
   const connection = new RpcConnection('http://localhost:9002');
@@ -426,7 +426,7 @@ import {
   InstructionUtil,
   AccountUtil,
   SignatureUtil 
-} from '@saturnbtcio/arch-sdk';
+} from '@arch-network/arch-sdk';
 
 // Get system program pubkey
 const systemProgram = PubkeyUtil.systemProgram();
@@ -446,7 +446,7 @@ const deserializedMsg = MessageUtil.deserialize(serializedMsg);
 The SDK provides custom error types:
 
 ```typescript
-import { RpcConnection, ArchRpcError } from '@saturnbtcio/arch-sdk';
+import { RpcConnection, ArchRpcError } from '@arch-network/arch-sdk';
 
 async function handleErrors() {
   const connection = new RpcConnection('http://localhost:9002');
@@ -470,7 +470,7 @@ async function handleErrors() {
 Here's a complete example showing how to connect and query the network:
 
 ```typescript
-import { RpcConnection, ArchConnection } from '@saturnbtcio/arch-sdk';
+import { RpcConnection, ArchConnection } from '@arch-network/arch-sdk';
 
 async function completeExample() {
   // 1. Setup connection
@@ -528,10 +528,10 @@ completeExample().catch(console.error);
 - Learn about [Arch's account model](../account.md)
 - Understand [message and instruction formats](../instructions-and-messages.md)
 - Explore the [RPC API](../../reference/rpc/index.md) for all available methods
-- Check the [TypeScript SDK source](https://github.com/saturnbtc/arch-typescript-sdk) for implementation details
+- Check the [TypeScript SDK source](https://github.com/Arch-Network/arch-typescript-sdk) for implementation details
 
 ## Resources
 
-- **NPM Package**: [@saturnbtcio/arch-sdk](https://www.npmjs.com/package/@saturnbtcio/arch-sdk)
-- **GitHub Repository**: [saturnbtc/arch-typescript-sdk](https://github.com/saturnbtc/arch-typescript-sdk)
+- **NPM Package**: [@arch-network/arch-sdk](https://www.npmjs.com/package/@arch-network/arch-sdk)
+- **GitHub Repository**: [Arch-Network/arch-typescript-sdk](https://github.com/Arch-Network/arch-typescript-sdk)
 - **Discord**: [Arch Network Discord](https://discord.gg/archnetwork)

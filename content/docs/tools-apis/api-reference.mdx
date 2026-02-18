@@ -685,15 +685,15 @@ curl -X POST http://localhost:9002 \
 
 ### TypeScript SDK
 ```typescript
-import { Connection } from '@saturnbtcio/arch-sdk';
+import { RpcConnection } from '@arch-network/arch-sdk';
 
-const connection = new Connection('http://localhost:9002');
+const connection = new RpcConnection('http://localhost:9002');
 
-// Get account info
-const accountInfo = await connection.getAccountInfo(publicKey);
+// Read account info
+const accountInfo = await connection.readAccountInfo(publicKey);
 
 // Send transaction
-const signature = await connection.sendTransaction(transaction);
+const txid = await connection.sendTransaction(transaction);
 ```
 
 ### Rust SDK
@@ -759,7 +759,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   <Card title="Arch Network Repository" href="https://github.com/Arch-Network/arch-network" external>
     Source code and issues
   </Card>
-  <Card title="TypeScript SDK" href="https://github.com/saturnbtc/arch-typescript-sdk" external>
+  <Card title="TypeScript SDK" href="https://github.com/Arch-Network/arch-typescript-sdk" external>
     TypeScript SDK for easier integration
   </Card>
   <Card title="Community Discord" href="https://discord.gg/archnetwork" external>

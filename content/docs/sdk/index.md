@@ -4,12 +4,12 @@ The Arch Network ecosystem provides two distinct SDKs for building applications.
 
 ## Available SDKs
 
-### 1. TypeScript SDK (by Saturn)
+### 1. TypeScript SDK
 
-The **TypeScript SDK** is developed and maintained by Saturn (@saturnbtc) and provides a comprehensive JavaScript/TypeScript interface for interacting with the Arch Network.
+The **TypeScript SDK** provides a comprehensive JavaScript/TypeScript interface for interacting with the Arch Network.
 
-**Package**: `@saturnbtcio/arch-sdk`  
-**Repository**: [arch-typescript-sdk](https://github.com/saturnbtc/arch-typescript-sdk)  
+**Package**: `@arch-network/arch-sdk`  
+**Repository**: [arch-typescript-sdk](https://github.com/Arch-Network/arch-typescript-sdk)  
 **Language**: TypeScript/JavaScript  
 **Best for**: 
 - Frontend applications (React, Vue, Angular)
@@ -52,9 +52,9 @@ The **Rust SDK** is the native SDK included in the main Arch Network repository.
 
 ### TypeScript SDK Installation
 ```bash
-npm install @saturnbtcio/arch-sdk
+npm install @arch-network/arch-sdk
 # or
-yarn add @saturnbtcio/arch-sdk
+yarn add @arch-network/arch-sdk
 ```
 
 ### Rust SDK Installation
@@ -68,13 +68,12 @@ arch_sdk = "0.5.4"
 
 **TypeScript SDK:**
 ```typescript
-import { Connection, Keypair } from '@saturnbtcio/arch-sdk';
+import { RpcConnection } from '@arch-network/arch-sdk';
 
-const connection = new Connection('http://localhost:9002');
-const keypair = Keypair.generate();
+const connection = new RpcConnection('http://localhost:9002');
 
-const isReady = await connection.isNodeReady();
-console.log('Node ready:', isReady);
+const blockCount = await connection.getBlockCount();
+console.log('Block count:', blockCount);
 ```
 
 **Rust SDK:**
@@ -150,9 +149,9 @@ While both SDKs interact with the same Arch Network, they have different APIs an
 ## Getting Help
 
 ### TypeScript SDK Support
-- **Issues**: [Saturn SDK GitHub Issues](https://github.com/saturnbtc/arch-typescript-sdk/issues)
+- **Issues**: [TypeScript SDK GitHub Issues](https://github.com/Arch-Network/arch-typescript-sdk/issues)
 - **Documentation**: [TypeScript SDK Docs](typescript/getting-started.md)
-- **Examples**: [TypeScript Examples](https://github.com/saturnbtc/arch-typescript-sdk/tree/main/examples)
+- **Examples**: [TypeScript Examples](https://github.com/Arch-Network/arch-typescript-sdk/tree/main/examples)
 
 ### Rust SDK Support
 - **Issues**: [Arch Network GitHub Issues](https://github.com/arch-network/arch-network/issues)

@@ -7,12 +7,12 @@ The Arch Network ecosystem provides two distinct SDKs for building applications.
 
 ## Available SDKs
 
-### 1. TypeScript SDK (by Saturn)
+### 1. TypeScript SDK
 
-The **TypeScript SDK** is developed and maintained by Saturn (@saturnbtc) and provides a comprehensive JavaScript/TypeScript interface for interacting with the Arch Network.
+The **TypeScript SDK** provides a comprehensive JavaScript/TypeScript interface for interacting with the Arch Network.
 
-**Package**: `@saturnbtcio/arch-sdk`  
-**Repository**: [arch-typescript-sdk](https://github.com/saturnbtc/arch-typescript-sdk)  
+**Package**: `@arch-network/arch-sdk`  
+**Repository**: [arch-typescript-sdk](https://github.com/Arch-Network/arch-typescript-sdk)  
 **Language**: TypeScript/JavaScript  
 **Best for**: 
 - Frontend applications (React, Vue, Angular)
@@ -56,9 +56,9 @@ The **Rust SDK** is the native SDK included in the main Arch Network repository.
 ### TypeScript SDK Installation
 
 ```bash
-npm install @saturnbtcio/arch-sdk
+npm install @arch-network/arch-sdk
 # or
-yarn add @saturnbtcio/arch-sdk
+yarn add @arch-network/arch-sdk
 ```
 
 ### Rust SDK Installation
@@ -73,13 +73,12 @@ arch_sdk = "0.5.4"
 
 **TypeScript SDK:**
 ```typescript
-import { Connection, Keypair } from '@saturnbtcio/arch-sdk';
+import { RpcConnection } from '@arch-network/arch-sdk';
 
-const connection = new Connection('http://localhost:9002');
-const keypair = Keypair.generate();
+const connection = new RpcConnection('http://localhost:9002');
 
-const isReady = await connection.isNodeReady();
-console.log('Node ready:', isReady);
+const blockCount = await connection.getBlockCount();
+console.log('Block count:', blockCount);
 ```
 
 **Rust SDK:**
@@ -137,18 +136,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 For building web applications, the TypeScript SDK is the clear choice:
 
 ```typescript
-import { Connection, Keypair, Transaction } from '@saturnbtcio/arch-sdk';
+import {
+  RpcConnection,
+  ArchConnection,
+  SanitizedMessageUtil,
+  SignatureUtil,
+} from '@arch-network/arch-sdk';
 
-// Connect to Arch Network
-const connection = new Connection('http://localhost:9002');
-const keypair = Keypair.generate();
+const provider = new RpcConnection('http://localhost:9002');
+const arch = ArchConnection(provider);
 
-// Create and send a transaction
-const transaction = new Transaction();
-transaction.addInstruction(/* your instruction */);
+const instructions = [/* your instructions */];
+const payerPubkey = new Uint8Array(32); // your payer pubkey
+const recentBlockhash = await provider.getBestBlockHash();
 
-const signature = await connection.sendTransaction(transaction, [keypair]);
-console.log('Transaction signature:', signature);
+const message = SanitizedMessageUtil.createSanitizedMessage(
+  instructions, payerPubkey, recentBlockhash
+);
+
+const transaction = {
+  version: 1,
+  signatures: [/* your adjusted signature */],
+  message,
+};
+
+const txid = await arch.sendTransaction(transaction);
+console.log('Transaction ID:', txid);
 ```
 
 ### Smart Contract Development
@@ -180,14 +193,15 @@ Both SDKs can be used for backend services, depending on your requirements:
 
 **TypeScript SDK (Node.js):**
 ```typescript
-import { Connection } from '@saturnbtcio/arch-sdk';
+import { RpcConnection } from '@arch-network/arch-sdk';
 
-const connection = new Connection('http://localhost:9002');
+const connection = new RpcConnection('http://localhost:9002');
 
-// Monitor transactions
-connection.onTransaction((tx) => {
-    console.log('New transaction:', tx);
-});
+const blockCount = await connection.getBlockCount();
+console.log('Current block count:', blockCount);
+
+const bestBlockHash = await connection.getBestBlockHash();
+console.log('Best block hash:', bestBlockHash);
 ```
 
 **Rust SDK:**
@@ -220,7 +234,7 @@ If you're coming from Solana development, both SDKs provide familiar patterns:
 import { Connection } from '@solana/web3.js';
 
 // Arch Network
-import { Connection } from '@saturnbtcio/arch-sdk';
+import { RpcConnection } from '@arch-network/arch-sdk';
 ```
 
 **Rust (Solana → Arch):**
@@ -261,7 +275,7 @@ let transaction = Transaction::new()
 ## Getting Help
 
 ### TypeScript SDK Support
-- **GitHub Issues**: [arch-typescript-sdk/issues](https://github.com/saturnbtc/arch-typescript-sdk/issues)
+- **GitHub Issues**: [arch-typescript-sdk/issues](https://github.com/Arch-Network/arch-typescript-sdk/issues)
 - **Discord**: #typescript-sdk channel
 - **Documentation**: [TypeScript SDK Docs](/docs/tools-apis/sdk)
 
@@ -290,7 +304,7 @@ let transaction = Transaction::new()
 ## Resources
 
 <Cards>
-  <Card title="TypeScript SDK Repository" href="https://github.com/saturnbtc/arch-typescript-sdk" external>
+  <Card title="TypeScript SDK Repository" href="https://github.com/Arch-Network/arch-typescript-sdk" external>
     Source code and issues
   </Card>
   <Card title="Arch Network Repository" href="https://github.com/Arch-Network/arch-network" external>
