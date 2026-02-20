@@ -61,7 +61,7 @@ yarn add @arch-network/arch-sdk
 ```toml
 # In your Cargo.toml
 [dependencies]
-arch_sdk = "0.6.1"
+arch_sdk = "0.6.2"
 ```
 
 ### Basic Connection Example
