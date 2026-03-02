@@ -124,10 +124,11 @@ echo "Token account: $TOKEN_ACCOUNT"
 
 ```bash
 # Mint 1,000 tokens to the token account (with 6 decimals)
+# Do NOT use --auto-create-ata here since $TOKEN_ACCOUNT is already an ATA address;
+# --auto-create-ata would treat it as an owner and derive a different ATA from it.
 arch-cli token mint "$MINT" 1000000000 \
   --account-address "$TOKEN_ACCOUNT" \
   --authority ~/DEMO_KEYS/mint_authority.key \
-  --auto-create-ata \
   --keypair-path ~/DEMO_KEYS/payer.key
 
 # Check the token account balance
