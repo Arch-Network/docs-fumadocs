@@ -159,7 +159,8 @@ export RECIPIENT_ACCOUNT=$(NO_COLOR=1 arch-cli token create-account \
 
 # Transfer 100 tokens (100000000 units with 6 decimals)
 arch-cli token transfer "$TOKEN_ACCOUNT" "$RECIPIENT_ACCOUNT" 100000000 \
-  --owner ~/DEMO_KEYS/token_account_owner.key
+  --owner ~/DEMO_KEYS/token_account_owner.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
 ```
 
 ### Approve Delegation
@@ -171,7 +172,8 @@ openssl rand -out ~/DEMO_KEYS/delegate.key 32
 # Approve the delegate to spend 50 tokens (use delegate's base58 public key)
 export DELEGATE_PUBKEY=<DELEGATE_PUBKEY_BASE58>
 arch-cli token approve "$TOKEN_ACCOUNT" "$DELEGATE_PUBKEY" 50000000 \
-  --owner ~/DEMO_KEYS/token_account_owner.key
+  --owner ~/DEMO_KEYS/token_account_owner.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
 
 # Check the balance
 arch-cli token balance "$TOKEN_ACCOUNT"
@@ -182,7 +184,8 @@ arch-cli token balance "$TOKEN_ACCOUNT"
 ```bash
 # Transfer tokens using the delegate as the signer
 arch-cli token transfer "$TOKEN_ACCOUNT" "$RECIPIENT_ACCOUNT" 25000000 \
-  --owner ~/DEMO_KEYS/delegate.key
+  --owner ~/DEMO_KEYS/delegate.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
 ```
 
 ### Burn Tokens
@@ -203,11 +206,13 @@ arch-cli token burn \
 ```bash
 # Freeze the token account (prevents transfers)
 arch-cli token freeze-account "$TOKEN_ACCOUNT" \
-  --authority ~/DEMO_KEYS/mint_authority.key
+  --authority ~/DEMO_KEYS/mint_authority.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
 
 # Thaw the account (re-enable transfers)
 arch-cli token thaw-account "$TOKEN_ACCOUNT" \
-  --authority ~/DEMO_KEYS/freeze_authority.key
+  --authority ~/DEMO_KEYS/freeze_authority.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
 ```
 
 ### Close Token Account
@@ -215,7 +220,8 @@ arch-cli token thaw-account "$TOKEN_ACCOUNT" \
 ```bash
 # Close the token account (reclaims rent)
 arch-cli token close-account "$TOKEN_ACCOUNT" <DESTINATION_PUBKEY> \
-  --owner ~/DEMO_KEYS/token_account_owner.key
+  --owner ~/DEMO_KEYS/token_account_owner.key \
+  --keypair-path ~/DEMO_KEYS/payer.key
 ```
 
 ## Multisig Token Operations
