@@ -157,14 +157,17 @@ arch-cli token transfer "$TOKEN_ACCOUNT" "$RECIPIENT_ACCOUNT" 100000000 \
 ### Approve Delegation
 
 ```bash
-# Generate a delegate keypair
+# Generate a delegate keypair and fund it (delegate pays fees when transferring)
 openssl rand -out ~/DEMO_KEYS/delegate.key 32
-
-# Fund the delegate account (delegate acts as fee payer when transferring)
 arch-cli account airdrop --keypair-path ~/DEMO_KEYS/delegate.key
 
-# Approve the delegate to spend 50 tokens (use delegate's base58 public key)
-export DELEGATE_PUBKEY=<DELEGATE_PUBKEY_BASE58>
+# Derive the delegate's base58 public key from the keypair
+export DELEGATE_PUBKEY=$(NO_COLOR=1 arch-cli account airdrop \
+  --keypair-path ~/DEMO_KEYS/delegate.key --amount 0 2>/dev/null \
+  | awk -F': ' '/Public key/{print $2}')
+echo "Delegate pubkey: $DELEGATE_PUBKEY"
+
+# Approve the delegate to spend 50 tokens
 arch-cli token approve "$TOKEN_ACCOUNT" "$DELEGATE_PUBKEY" 50000000 \
   --owner ~/DEMO_KEYS/token_account_owner.key
 
@@ -208,8 +211,13 @@ arch-cli token thaw-account "$TOKEN_ACCOUNT" \
 ### Close Token Account
 
 ```bash
-# Close the token account (reclaims rent)
-arch-cli token close-account "$TOKEN_ACCOUNT" <DESTINATION_PUBKEY> \
+# Derive the owner's public key as the destination for remaining lamports
+export OWNER_PUBKEY=$(NO_COLOR=1 arch-cli account airdrop \
+  --keypair-path ~/DEMO_KEYS/token_account_owner.key --amount 0 2>/dev/null \
+  | awk -F': ' '/Public key/{print $2}')
+
+# Close the token account (reclaims rent to owner)
+arch-cli token close-account "$TOKEN_ACCOUNT" "$OWNER_PUBKEY" \
   --owner ~/DEMO_KEYS/token_account_owner.key
 ```
 
