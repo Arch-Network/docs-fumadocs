@@ -83,9 +83,13 @@ mkdir -p ~/DEMO_KEYS
 openssl rand -out ~/DEMO_KEYS/payer.key 32
 openssl rand -out ~/DEMO_KEYS/mint_authority.key 32
 openssl rand -out ~/DEMO_KEYS/mint.key 32
+openssl rand -out ~/DEMO_KEYS/token_account_owner.key 32
 
 # Fund the payer account
 arch-cli account airdrop --keypair-path ~/DEMO_KEYS/payer.key
+
+# Fund the token account owner (owner acts as fee payer for transfers and approvals)
+arch-cli account airdrop --keypair-path ~/DEMO_KEYS/token_account_owner.key
 ```
 
 ### Step 4: Create Token Mint
@@ -107,16 +111,7 @@ echo "Mint address: $MINT"
 ### Step 5: Create Token Account
 
 ```bash
-# Generate a keypair for the token account owner
-openssl rand -out ~/DEMO_KEYS/token_account_owner.key 32
-
-# Create a token account for the owner
-arch-cli token create-account \
-  --mint "$MINT" \
-  --owner ~/DEMO_KEYS/token_account_owner.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
-
-# Save the token account address from the command output
+# Create a token account (ATA) for the owner and capture its address
 export TOKEN_ACCOUNT=$(NO_COLOR=1 arch-cli token create-account \
   --mint "$MINT" \
   --owner ~/DEMO_KEYS/token_account_owner.key \
@@ -146,11 +141,6 @@ arch-cli token balance "$TOKEN_ACCOUNT"
 ```bash
 # Create a second token account for transfers
 openssl rand -out ~/DEMO_KEYS/recipient.key 32
-arch-cli token create-account \
-  --mint "$MINT" \
-  --owner ~/DEMO_KEYS/recipient.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
-
 export RECIPIENT_ACCOUNT=$(NO_COLOR=1 arch-cli token create-account \
   --mint "$MINT" \
   --owner ~/DEMO_KEYS/recipient.key \
@@ -158,9 +148,9 @@ export RECIPIENT_ACCOUNT=$(NO_COLOR=1 arch-cli token create-account \
   | awk -F': ' '/^Account Address:/{print $2; exit}')
 
 # Transfer 100 tokens (100000000 units with 6 decimals)
+# The --owner keypair is used as both the transfer authority and the fee payer
 arch-cli token transfer "$TOKEN_ACCOUNT" "$RECIPIENT_ACCOUNT" 100000000 \
-  --owner ~/DEMO_KEYS/token_account_owner.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+  --owner ~/DEMO_KEYS/token_account_owner.key
 ```
 
 ### Approve Delegation
@@ -169,11 +159,13 @@ arch-cli token transfer "$TOKEN_ACCOUNT" "$RECIPIENT_ACCOUNT" 100000000 \
 # Generate a delegate keypair
 openssl rand -out ~/DEMO_KEYS/delegate.key 32
 
+# Fund the delegate account (delegate acts as fee payer when transferring)
+arch-cli account airdrop --keypair-path ~/DEMO_KEYS/delegate.key
+
 # Approve the delegate to spend 50 tokens (use delegate's base58 public key)
 export DELEGATE_PUBKEY=<DELEGATE_PUBKEY_BASE58>
 arch-cli token approve "$TOKEN_ACCOUNT" "$DELEGATE_PUBKEY" 50000000 \
-  --owner ~/DEMO_KEYS/token_account_owner.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+  --owner ~/DEMO_KEYS/token_account_owner.key
 
 # Check the balance
 arch-cli token balance "$TOKEN_ACCOUNT"
@@ -182,21 +174,19 @@ arch-cli token balance "$TOKEN_ACCOUNT"
 ### Transfer from Delegate
 
 ```bash
-# Transfer tokens using the delegate as the signer
+# Transfer tokens using the delegate as the signer (delegate pays fees)
 arch-cli token transfer "$TOKEN_ACCOUNT" "$RECIPIENT_ACCOUNT" 25000000 \
-  --owner ~/DEMO_KEYS/delegate.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+  --owner ~/DEMO_KEYS/delegate.key
 ```
 
 ### Burn Tokens
 
 ```bash
-# Burn 10 tokens from the token account
+# Burn 10 tokens from the token account (owner pays fees)
 arch-cli token burn \
-  --account $TOKEN_ACCOUNT \
-  --amount 10000000 \
-  --owner ~/DEMO_KEYS/token_account_owner.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+  $TOKEN_ACCOUNT \
+  10000000 \
+  --owner ~/DEMO_KEYS/token_account_owner.key
 ```
 
 ## Token Account Management
@@ -205,14 +195,13 @@ arch-cli token burn \
 
 ```bash
 # Freeze the token account (prevents transfers)
+# The --authority keypair acts as both the freeze authority and the fee payer
 arch-cli token freeze-account "$TOKEN_ACCOUNT" \
-  --authority ~/DEMO_KEYS/mint_authority.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+  --authority ~/DEMO_KEYS/mint_authority.key
 
 # Thaw the account (re-enable transfers)
 arch-cli token thaw-account "$TOKEN_ACCOUNT" \
-  --authority ~/DEMO_KEYS/freeze_authority.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+  --authority ~/DEMO_KEYS/freeze_authority.key
 ```
 
 ### Close Token Account
@@ -220,8 +209,7 @@ arch-cli token thaw-account "$TOKEN_ACCOUNT" \
 ```bash
 # Close the token account (reclaims rent)
 arch-cli token close-account "$TOKEN_ACCOUNT" <DESTINATION_PUBKEY> \
-  --owner ~/DEMO_KEYS/token_account_owner.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
+  --owner ~/DEMO_KEYS/token_account_owner.key
 ```
 
 ## Multisig Token Operations
@@ -367,8 +355,9 @@ openssl rand -out ~/DEMO_KEYS/mint_authority.key 32
 openssl rand -out ~/DEMO_KEYS/mint.key 32
 openssl rand -out ~/DEMO_KEYS/token_account_owner.key 32
 
-# Fund payer
+# Fund payer and token account owner
 arch-cli account airdrop --keypair-path ~/DEMO_KEYS/payer.key
+arch-cli account airdrop --keypair-path ~/DEMO_KEYS/token_account_owner.key
 
 # Recreate mint (uses the mint_authority you just generated)
 arch-cli token create-mint \
@@ -382,9 +371,9 @@ export MINT=$(NO_COLOR=1 arch-cli token show-mint ~/DEMO_KEYS/mint.key | awk -F'
 
 ### Key Roles
 
-- Payer (`--keypair-path`): pays fees; required when creating ATAs
-- Mint authority (`--authority`): must equal on-chain Mint Authority
-- Owner (`--account-address`): owner’s base58 pubkey; CLI derives/creates the ATA
+- Payer (`--keypair-path`): pays fees for account creation (`create-account`, `create-mint`) and multisig operations
+- Mint authority (`--authority`): must equal on-chain Mint Authority; also pays fees when used as the signer
+- Owner (`--owner`): signs single-signer operations (transfer, approve, burn, close) **and pays fees** for those transactions. Must be funded via airdrop
 
 **Account Not Found:**
 ```bash
