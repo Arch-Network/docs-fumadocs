@@ -69,15 +69,23 @@ arch-cli config create-profile <NAME> \
 - `--bitcoin-network`: Bitcoin network ("mainnet", "testnet", or "regtest")
 - `--arch-node-url`: Arch Network node URL
 
-**Example:**
+**Example (testnet):**
 ```bash
 arch-cli config create-profile testnet \
     --bitcoin-node-endpoint http://bitcoin-rpc.test.arch.network:80 \
     --bitcoin-node-username bitcoin \
     --bitcoin-node-password 0F_Ed53o4kR7nxh3xNaSQx-2M3TY16L55mz5y9fjdrk \
     --bitcoin-network testnet \
-    --arch-node-url http://localhost:9002
+    --arch-node-url https://rpc.testnet.arch.network
 ```
+
+:::note
+Public Arch RPC endpoints:
+- **Testnet:** `https://rpc.testnet.arch.network`
+- **Mainnet:** `https://rpc.mainnet.arch.network`
+
+For local development, use `http://localhost:9002`.
+:::
 
 ### List Profiles
 

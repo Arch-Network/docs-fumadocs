@@ -78,22 +78,30 @@ arch-cli orchestrate start --no-bitcoind
 arch-cli orchestrate start --force-rebuild
 ```
 
-#### Option B: Testnet (Remote Bitcoin + Local Arch)
+#### Option B: Testnet (Remote Bitcoin + Public Arch RPC)
 
-For testnet development with remote Bitcoin node:
+For testnet development against the public Arch Network:
 
 ```bash
-# 1. Create a configuration profile
+# 1. Create a configuration profile using the public testnet RPC
 arch-cli config create-profile testnet \
     --bitcoin-node-endpoint http://bitcoin-rpc.test.arch.network:80 \
     --bitcoin-node-username bitcoin \
     --bitcoin-node-password 0F_Ed53o4kR7nxh3xNaSQx-2M3TY16L55mz5y9fjdrk \
     --bitcoin-network testnet \
-    --arch-node-url http://localhost:9002
+    --arch-node-url https://rpc.testnet.arch.network
 
-# 2. Start local Arch environment (no local bitcoind)
-arch-cli --profile testnet orchestrate start --local "$(pwd)" --no-bitcoind
+# 2. Set as default profile
+arch-cli config set-default-profile testnet
 ```
+
+:::note
+Public Arch RPC endpoints:
+- **Testnet:** `https://rpc.testnet.arch.network`
+- **Mainnet:** `https://rpc.mainnet.arch.network`
+
+For local development (Option A/C), use `http://localhost:9002`.
+:::
 
 #### Option C: Devnet (Full Local Stack)
 
