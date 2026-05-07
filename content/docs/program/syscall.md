@@ -2,56 +2,102 @@
 title: "Syscalls"
 ---
 
-A syscall is a function that can be used to obtain information from the underlying virtual machine.
+A syscall is a VM-provided function that an Arch program can call to perform runtime operations such as CPI, PDA derivation, logging, hashing, Bitcoin lookups, and transaction signing.
+
+The signatures below mirror the public syscall definitions exposed by `arch_program`.
+
+## CPI and Return Data
 
 ```rust
-// Used for cross-program invocation (CPI)
+define_syscall!(fn sol_invoke_signed_rust(
+    instruction_addr: *const u8,
+    account_infos_addr: *const u8,
+    account_infos_len: u64,
+    signers_seeds_addr: *const u8,
+    signers_seeds_len: u64,
+) -> u64);
 
-// Invokes a cross-program call
-define_syscall!(fn sol_invoke_signed_rust(instruction_addr: *const u8, account_infos_addr: *const u8, account_infos_len: u64) -> u64);
-
-// Sets the data to be returned for the cross-program invocation
 define_syscall!(fn sol_set_return_data(data: *const u8, length: u64));
-
-// Returns the cross-program invocation data
 define_syscall!(fn sol_get_return_data(data: *mut u8, length: u64, program_id: *mut Pubkey) -> u64);
-
-// Arch
-
-// Validates and sets up transaction for being signed
-define_syscall!(fn arch_set_transaction_to_sign(transaction_to_sign: *const TransactionToSign));
-
-// Retrieves raw Bitcoin transaction from RPC and copies into memory buffer
-define_syscall!(fn arch_get_bitcoin_tx(data: *mut u8, length: u64, txid: &[u8; 32]) -> u64);
-
-// Retrieves the multi-sig public key and copies into memory buffer
-define_syscall!(fn arch_get_network_xonly_pubkey(data: *mut u8) -> u64);
-
-// Validates ownership of a Bitcoin UTXO against a public key
-define_syscall!(fn arch_validate_utxo_ownership(utxo: *const UtxoMeta, owner: *const Pubkey) -> u64);
-
-// Generates a Bitcoin script public key and copies into memory buffer
-define_syscall!(fn arch_get_account_script_pubkey(script: *mut u8, pubkey: *const Pubkey) -> u64);
-
-// Retrieves the latest Bitcoin block height
-define_syscall!(fn arch_get_bitcoin_block_height() -> u64);
-
-// logs
-
-// Prints the hexidecimal representation of a string slice to stdout
-define_syscall!(fn sol_log_(message: *const u8, len: u64));
-
-// Prints 64-bit values represented as hexadecimal to stdout
-define_syscall!(fn sol_log_64_(arg1: u64, arg2: u64, arg3: u64, arg4: u64, arg5: u64));
-
-// Prints the hexidecimal representation of a public key to stdout
-define_syscall!(fn sol_log_pubkey(pubkey_addr: *const u8));
-
-// Prints the base64 representation of a data array to stdout
-define_syscall!(fn sol_log_data(data: *const u8, data_len: u64));
 ```
 
-[syscalls/definition.rs]
+`sol_invoke_signed_rust` receives serialized instruction data, serialized account infos, and serialized signer seed groups for CPI and PDA signing.
 
-<!-- External -->
-[syscalls/definition.rs]: https://github.com/Arch-Network/arch-examples/blob/main/program/src/syscalls/definitions.rs
+## PDA Helpers
+
+```rust
+define_syscall!(fn sol_try_find_program_address(
+    seeds_addr: *const u8,
+    seeds_len: u64,
+    program_id_addr: *const u8,
+    address_bytes_addr: *const u8,
+    bump_seed_addr: *const u8,
+) -> u64);
+
+define_syscall!(fn sol_create_program_address(
+    seeds_addr: *const u8,
+    seeds_len: u64,
+    program_id_addr: *const u8,
+    address_addr: *mut u8,
+) -> u64);
+```
+
+## Compute, Clock, and Stack
+
+```rust
+define_syscall!(fn get_remaining_compute_units() -> u64);
+define_syscall!(fn arch_get_clock(clock: *mut Clock) -> u64);
+define_syscall!(fn arch_get_stack_height() -> u64);
+```
+
+## Transaction Signing
+
+```rust
+define_syscall!(fn arch_set_transaction_to_sign(transaction_to_sign: *const u8, length: u64) -> u64);
+define_syscall!(fn arch_get_transaction_to_sign(transaction_to_sign: *mut u8, length: u64) -> u64);
+define_syscall!(fn arch_set_inputs_to_sign(inputs_to_sign: *const u8, length: u64) -> u64);
+```
+
+Transaction signing syscalls operate on serialized byte buffers and explicit lengths.
+
+## Bitcoin and Runes
+
+```rust
+define_syscall!(fn arch_get_bitcoin_tx(data: *mut u8, length: u64, txid: &[u8; 32]) -> u64);
+define_syscall!(fn arch_get_runes_from_output(data: *mut u8, length: u64, txid: &[u8; 32], output_index: u32) -> u64);
+define_syscall!(fn arch_get_rune_info(data: *mut u8, length: u64, block: u64, tx: u64) -> u64);
+define_syscall!(fn arch_get_bitcoin_tx_confirmation(txid: &[u8; 32], result: *mut u8) -> u64);
+define_syscall!(fn arch_get_network_xonly_pubkey(data: *mut u8) -> u64);
+define_syscall!(fn arch_validate_utxo_ownership(utxo: *const UtxoMeta, owner: *const Pubkey) -> u64);
+define_syscall!(fn arch_get_account_script_pubkey(script: *mut u8, pubkey: *const Pubkey) -> u64);
+define_syscall!(fn arch_get_bitcoin_block_height() -> u64);
+```
+
+## Crypto
+
+```rust
+define_syscall!(fn sol_secp256k1_recover(
+    hash_addr: *const u8,
+    recovery_id_val: u64,
+    signature_addr: *const u8,
+    result_addr: *mut u8,
+) -> u64);
+
+define_syscall!(fn sol_keccak256(data: *const u8, length: u64, result: *mut u8) -> u64);
+define_syscall!(fn sol_sha256(data: *const u8, length: u64, result: *mut u8) -> u64);
+```
+
+## Logging and Memory
+
+```rust
+define_syscall!(fn sol_log_(message: *const u8, len: u64));
+define_syscall!(fn sol_log_64_(arg1: u64, arg2: u64, arg3: u64, arg4: u64, arg5: u64));
+define_syscall!(fn sol_log_compute_units_());
+define_syscall!(fn sol_log_pubkey(pubkey_addr: *const u8));
+define_syscall!(fn sol_log_data(data: *const u8, data_len: u64));
+
+define_syscall!(fn sol_memcmp_(data1: *const u8, data2: *const u8, len: u64, result: *mut i32) -> u64);
+define_syscall!(fn sol_memcpy_(dest: *mut u8, src: *const u8, len: u64) -> u64);
+define_syscall!(fn sol_memset_(dest: *mut u8, val: u8, len: u64) -> u64);
+define_syscall!(fn sol_memmove_(dest: *mut u8, src: *const u8, len: u64) -> u64);
+```

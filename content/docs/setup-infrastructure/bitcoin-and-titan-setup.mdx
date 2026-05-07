@@ -75,7 +75,7 @@ The easiest way to get started using the CLI orchestrate command.
 - **Docker Management** (optional but recommended):
   - **macOS**: [OrbStack](https://orbstack.dev/) (recommended) or [Docker Desktop](https://www.docker.com/products/docker-desktop/)
   - **Linux**: [Docker Desktop](https://www.docker.com/products/docker-desktop/) (optional GUI)
-- **Arch Network CLI** - Download from [releases](https://github.com/Arch-Network/arch-node/releases/latest)
+- **Arch Network CLI** - Install using the [System Requirements guide](/docs/quick-start/requirements)
 
 **Setup:**
 ```bash
@@ -102,14 +102,11 @@ This automatically starts:
 # Stop all services
 arch-cli orchestrate stop
 
-# Restart all services
-arch-cli orchestrate restart
+# Restart only the local validator service
+arch-cli orchestrate validator-restart
 
-# Check service status
-arch-cli orchestrate status
-
-# View logs
-arch-cli orchestrate logs
+# Check local validator service status
+arch-cli orchestrate validator-status
 
 # Reset everything (clears all data)
 arch-cli orchestrate reset
@@ -205,41 +202,26 @@ EOF
 
 **Install Arch Validator:**
 ```bash
-# Download Arch validator binary
-# Visit https://github.com/Arch-Network/arch-node/releases/latest
-
-# For Linux:
-wget https://github.com/Arch-Network/arch-node/releases/latest/download/arch-node-x86_64-unknown-linux-gnu
-chmod +x arch-node-x86_64-unknown-linux-gnu
-sudo mv arch-node-x86_64-unknown-linux-gnu /usr/local/bin/arch-node
+# From a checkout of the private Arch Network source repository:
+cargo build --release -p validator
 ```
 
 **Configure Validator:**
 ```bash
 # Create validator data directory
 mkdir -p ~/.arch_data
-
-# Create validator configuration
-cat > ~/.arch_data/config.toml << EOF
-[network]
-mode = "devnet"
-bitcoin_rpc_url = "http://bitcoin:bitcoinpass@127.0.0.1:18443"
-titan_rpc_url = "http://127.0.0.1:3030"
-
-[validator]
-rpc_port = 9002
-p2p_port = 9003
-data_dir = "~/.arch_data"
-
-[logging]
-level = "info"
-EOF
 ```
 
 **Start Validator:**
 ```bash
-# Start Arch validator
-arch-node --config ~/.arch_data/config.toml
+# Start Arch validator from source with explicit local endpoints
+cargo run --release -p validator -- \
+  --network-mode devnet \
+  --data-dir ~/.arch_data \
+  --rpc-bind-port 9001 \
+  --p2p-bind-port 29001 \
+  --titan-endpoint http://127.0.0.1:3030 \
+  --titan-socket-endpoint 127.0.0.1:8080
 ```
 
 ## 🔧 Configuration Options
@@ -306,8 +288,8 @@ bitcoin-cli -regtest getbalance
 
 ### Verify Titan Indexer
 ```bash
-# Check Titan API
-curl http://127.0.0.1:8080/health
+# Check Titan HTTP API
+curl http://127.0.0.1:3030
 
 # Get block information
 curl http://127.0.0.1:8080/api/v1/blocks/latest
@@ -315,11 +297,15 @@ curl http://127.0.0.1:8080/api/v1/blocks/latest
 
 ### Verify Arch Validator
 ```bash
-# Check validator status
-curl http://127.0.0.1:9002/health
+# Check validator readiness
+curl -X POST http://127.0.0.1:9002 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "is_node_ready", "params": []}'
 
-# Get network information
-curl http://127.0.0.1:9002/api/v1/network/info
+# Get validator version
+curl -X POST http://127.0.0.1:9002 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "get_version", "params": []}'
 ```
 
 ## 🚨 Troubleshooting
@@ -349,11 +335,8 @@ tail -f ~/.titan/logs/titan.log
 
 **Validator startup problems:**
 ```bash
-# Check validator logs
-tail -f ~/.arch_data/logs/validator.log
-
 # Verify all dependencies are running
-arch-cli orchestrate status
+arch-cli orchestrate validator-status
 ```
 
 ### Performance Optimization
@@ -366,8 +349,8 @@ echo "dbcache=2000" >> ~/.bitcoin/bitcoin.conf
 # Optimize Titan settings
 echo "max_connections=100" >> ~/.titan/config.toml
 
-# Restart services
-arch-cli orchestrate restart
+# Restart local validator service
+arch-cli orchestrate validator-restart
 ```
 
 ## 📚 Next Steps

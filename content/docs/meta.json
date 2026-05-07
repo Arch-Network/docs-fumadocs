@@ -76,6 +76,7 @@
       "title": "APIs and Tools",
       "pages": [
         "tools-apis/arch-cli-reference",
+        "tools-apis/sdk",
         "tools-apis/api-reference"
       ]
     },

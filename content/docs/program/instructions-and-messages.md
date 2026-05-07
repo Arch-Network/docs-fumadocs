@@ -171,5 +171,5 @@ Instructions can invoke other [programs] through CPI, enabling composability:
 <!-- Internal -->
 [program]: ./program.md
 [programs]: ./program.md
-[pubkey]: ../sdk/pubkey.md
-[transaction]: ../sdk/runtime-transaction.md
+[pubkey]: ./accounts.md
+[transaction]: #transaction-structure

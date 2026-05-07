@@ -391,19 +391,13 @@ mod tests {
 ```bash
 # Deploy your program
 cargo build-sbf
-arch-cli program deploy target/deploy/runes_swap.so
+arch-cli deploy target/deploy
 
 # Create a swap offer
-arch-cli program call <PROGRAM_ID> \
-  --accounts ~/offer_account.key \
-  --instruction-data $(echo '{"CreateOffer":{"offer_id":1,"rune_id_give":"DOG","amount_give":1000,"rune_id_want":"CAT","amount_want":500,"expiry":1000}}' | base64) \
-  --keypair-path ~/maker.key
+# Submit a RuntimeTransaction with the CreateOffer instruction using the SDK or RPC API
 
 # Accept the offer
-arch-cli program call <PROGRAM_ID> \
-  --accounts ~/offer_account.key,~/maker_account.key \
-  --instruction-data $(echo '{"AcceptOffer":{"offer_id":1}}' | base64) \
-  --keypair-path ~/taker.key
+# Submit a RuntimeTransaction with the AcceptOffer instruction using the SDK or RPC API
 ```
 
 ## Lesson 9: Advanced Features
@@ -532,10 +526,10 @@ pub fn verify_offer_ownership(
 cargo build-sbf
 
 # Deploy to local network
-arch-cli program deploy target/deploy/runes_swap.so
+arch-cli deploy target/deploy
 
-# Deploy to testnet
-arch-cli program deploy target/deploy/runes_swap.so --url testnet
+# Deploy to testnet by selecting a testnet profile
+arch-cli --profile testnet deploy target/deploy
 ```
 
 ### Create Test Accounts
@@ -555,22 +549,16 @@ arch-cli account airdrop --keypair-path ~/taker.key
 
 ```bash
 # 1. Create an offer
-arch-cli program call <PROGRAM_ID> \
-  --accounts ~/offer_account.key \
-  --instruction-data $(echo '{"CreateOffer":{"offer_id":1,"rune_id_give":"DOG","amount_give":1000,"rune_id_want":"CAT","amount_want":500,"expiry":1000}}' | base64) \
-  --keypair-path ~/maker.key
+# Submit a RuntimeTransaction with the CreateOffer instruction using the SDK or RPC API
 
 # 2. Check the offer status
-arch-cli account show ~/offer_account.key
+arch-cli show <OFFER_ACCOUNT_PUBKEY>
 
 # 3. Accept the offer
-arch-cli program call <PROGRAM_ID> \
-  --accounts ~/offer_account.key,~/maker_account.key \
-  --instruction-data $(echo '{"AcceptOffer":{"offer_id":1}}' | base64) \
-  --keypair-path ~/taker.key
+# Submit a RuntimeTransaction with the AcceptOffer instruction using the SDK or RPC API
 
 # 4. Verify the offer is filled
-arch-cli account show ~/offer_account.key
+arch-cli show <OFFER_ACCOUNT_PUBKEY>
 ```
 
 ## Best Practices
@@ -608,7 +596,7 @@ arch-cli account show ~/offer_account.key
   <Card title="Oracle Integration" href="/docs/development/how-to-write-oracle-program">
     Add price oracles to your swap
   </Card>
-  <Card title="APL Token Program" href="/docs/APL/token-program">
+  <Card title="APL Token Program" href="/docs/apl/token-program">
     Learn about the built-in token program
   </Card>
   <Card title="Arch Examples" href="https://github.com/Arch-Network/arch-examples" external>

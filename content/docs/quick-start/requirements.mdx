@@ -22,8 +22,8 @@ Welcome to the Arch Network development guide. This page contains all the requir
 |------------|----------------|-------------|
 | Operating System | Ubuntu 20.04+ / macOS 12.0+ | Latest LTS recommended |
 | Git | Latest | Version control |
-| Rust | Latest stable | Core development language |
-| Solana CLI | v2.0+ | Program compilation tools |
+| Rust | 1.94.0 | Host development toolchain |
+| Solana/Agave CLI | 3.1.9+ | Provides `cargo-build-sbf` for program compilation |
 | Arch Network CLI | Latest | Development toolkit |
 
 ## Installation Guide
@@ -53,67 +53,30 @@ sudo apt-get update
 sudo apt-get install -y build-essential gcc-multilib jq
 ```
 
-### 3. Install Solana CLI
+### 3. Install Solana/Agave CLI
 
 ```bash
 sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
 
-# Verify installation (should show 2.x.x or later)
+# Verify installation (use 3.1.9 or later)
 solana --version
 ```
 
 ### 4. Install Arch Network CLI
 
-<Cards>
-  <Card title="macOS - Apple Silicon" href="#macos-apple-silicon">
-    Installation instructions for Apple Silicon Macs
-  </Card>
-  <Card title="macOS - Intel" href="#macos-intel">
-    Installation instructions for Intel Macs
-  </Card>
-  <Card title="Linux - x86_64" href="#linux-x86_64">
-    Installation instructions for Linux x86_64
-  </Card>
-  <Card title="Linux - ARM64" href="#linux-arm64">
-    Installation instructions for Linux ARM64
-  </Card>
-</Cards>
-
-#### macOS - Apple Silicon
+The CLI README lists a cross-platform installer and Homebrew options:
 
 ```bash
-curl -L -o cli https://github.com/Arch-Network/arch-node/releases/latest/download/cli-aarch64-apple-darwin
-chmod +x cli
-sudo mv cli /usr/local/bin/
-```
+# One-line installer
+curl -sSL https://raw.githubusercontent.com/Arch-Network/arch-node/main/install.sh | bash
 
-#### macOS - Intel
-
-```bash
-curl -L -o cli https://github.com/Arch-Network/arch-node/releases/latest/download/cli-x86_64-apple-darwin
-chmod +x cli
-sudo mv cli /usr/local/bin/
-```
-
-#### Linux - x86_64
-
-```bash
-curl -L -o cli https://github.com/Arch-Network/arch-node/releases/latest/download/cli-x86_64-unknown-linux-gnu
-chmod +x cli
-sudo mv cli /usr/local/bin/
-```
-
-#### Linux - ARM64
-
-```bash
-curl -L -o cli https://github.com/Arch-Network/arch-node/releases/latest/download/cli-aarch64-unknown-linux-gnu
-chmod +x cli
-sudo mv cli /usr/local/bin/
+# Or install directly with Homebrew
+brew install https://raw.githubusercontent.com/Arch-Network/homebrew-tap/main/arch-cli.rb
 ```
 
 Verify installation:
 ```bash
-cli --version
+arch-cli --version
 ```
 
 ## Docker Requirements
@@ -194,10 +157,10 @@ The following ports need to be available:
 | Service | Port | Description |
 |---------|------|-------------|
 | Bitcoin Core RPC | 18443 (regtest) / 18332 (testnet) | Bitcoin RPC interface |
-| Titan HTTP API | 8080 | Titan HTTP API |
-| Titan TCP API | 3030 | Titan TCP interface |
+| Titan HTTP API | 3030 | Titan HTTP API |
+| Titan TCP API | 8080 | Titan TCP interface |
 | Arch Validator RPC | 9002 | Validator RPC interface |
-| Arch Validator P2P | 9003 | Peer-to-peer networking |
+| Arch Validator P2P | 19001 (local validator) / 29001 (validator binary) | Peer-to-peer networking |
 
 ### Firewall Configuration
 
@@ -211,9 +174,10 @@ sudo pfctl -f /etc/pf.conf
 ```bash
 # Allow specific ports
 sudo ufw allow 9002
-sudo ufw allow 9003
-sudo ufw allow 8080
 sudo ufw allow 3030
+sudo ufw allow 8080
+sudo ufw allow 19001
+sudo ufw allow 29001
 ```
 
 ## Troubleshooting
@@ -269,10 +233,12 @@ kill -9 <PID>
 **Connection refused:**
 ```bash
 # Check if service is running
-curl http://localhost:9002/health
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "is_node_ready", "params": []}'
 
-# Check service logs
-arch-cli orchestrate logs
+# Check the local validator service status
+arch-cli orchestrate validator-status
 ```
 
 ## Performance Optimization
@@ -313,7 +279,7 @@ sudo systemctl restart docker
 Before proceeding with development, verify:
 
 - [ ] Rust is installed and working (`rustc --version`)
-- [ ] Solana CLI is installed (`solana --version`)
+- [ ] Solana/Agave CLI is installed (`solana --version`)
 - [ ] Arch CLI is installed (`arch-cli --version`)
 - [ ] Docker is running (`docker --version`)
 - [ ] All required ports are available
@@ -337,13 +303,13 @@ Before proceeding with development, verify:
 ## Need Help?
 
 <Cards>
-  <Card title="Troubleshooting Guide" href="/docs/reference/troubleshooting">
+  <Card title="Troubleshooting Guide" href="/docs/help-resources/faq">
     Common issues and solutions
   </Card>
   <Card title="Discord Community" href="https://discord.gg/archnetwork" external>
     Join our developer community
   </Card>
-  <Card title="GitHub Issues" href="https://github.com/Arch-Network/arch-node/issues" external>
-    Report bugs and request features
+  <Card title="Community Discord" href="https://discord.gg/archnetwork" external>
+    Report bugs and request help
   </Card>
 </Cards>

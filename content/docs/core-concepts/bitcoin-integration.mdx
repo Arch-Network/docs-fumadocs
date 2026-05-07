@@ -64,40 +64,20 @@ flowchart LR
 **Diagram components**
 
 - **TransactionID & OutputIndex**: Together identify a specific Bitcoin UTXO; they select the exact output being referenced.
-- **UtxoMeta**: Arch‑side record of the UTXO (txid, vout, amount, script, confirmations) used for ownership, spend checks, and proof verification.
+- **UtxoMeta**: Compact Arch program identifier for a Bitcoin UTXO. It stores 36 bytes: a 32-byte transaction ID followed by a 4-byte little-endian output index.
 - **ProgramState**: Program‑maintained state linked to UTXOs; updates when UTXOs are created or spent to reflect application logic.
 
 ```rust
-// UTXO Metadata Structure
-pub struct UtxoMeta {
-    pub txid: [u8; 32],  // Transaction ID
-    pub vout: u32,       // Output index
-    pub amount: u64,     // Amount in satoshis
-    pub script_pubkey: Vec<u8>, // Output script
-    pub confirmation_height: Option<u32>, // Block height of confirmation
-}
+pub struct UtxoMeta([u8; 36]);
 
-// UTXO Account State
-pub struct UtxoAccount {
-    pub meta: UtxoMeta,
-    pub owner: Pubkey,
-    pub delegate: Option<Pubkey>,
-    pub state: Vec<u8>,
-    pub is_frozen: bool,
+impl UtxoMeta {
+    pub fn from(txid: [u8; 32], vout: u32) -> Self;
+    pub fn txid(&self) -> &[u8];
+    pub fn vout(&self) -> u32;
 }
 ```
 
-Key operations:
-
-```rust
-// UTXO Operations
-pub trait UtxoOperations {
-    fn create_utxo(meta: UtxoMeta, owner: &Pubkey) -> Result<()>;
-    fn spend_utxo(utxo: &UtxoMeta, signature: &Signature) -> Result<()>;
-    fn freeze_utxo(utxo: &UtxoMeta, authority: &Pubkey) -> Result<()>;
-    fn delegate_utxo(utxo: &UtxoMeta, delegate: &Pubkey) -> Result<()>;
-}
-```
+Richer metadata such as amount, script, and confirmation status is fetched and validated by the runtime, Titan, and Bitcoin integration layers rather than being stored in `UtxoMeta` itself.
 
 ### 2. Bitcoin RPC Integration
 

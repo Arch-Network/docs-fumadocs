@@ -32,8 +32,8 @@ The APL Token Program is Arch Network's native token standard, providing:
 ## Prerequisites
 
 Before starting, ensure you have:
-- **Rust 1.84.1+** and Cargo installed ([Install Rust](https://rustup.rs/))
-- **Arch Network CLI** - [Download Latest](https://github.com/Arch-Network/arch-network/releases/latest)
+- **Rust 1.94.0** and Cargo installed ([Install Rust](https://rustup.rs/))
+- **Arch Network CLI** - Install using the [System Requirements guide](/docs/quick-start/requirements)
 - **Docker** - Required for local development
 - **Running development environment** (see [Quick Start Guide](/docs/quick-start/quick-start))
 
@@ -41,7 +41,7 @@ Before starting, ensure you have:
 
 The APL Token Program has a fixed program ID:
 ```text
-AplToken111111111111111111111111
+TokenT4em53UrV4gSvZ3nCS2mZeHaqTLapwt6iZt6Mk
 ```
 
 ## Quick Start: Create Your First Token
@@ -269,26 +269,7 @@ arch-cli token mint "$MINT" 1000000000 \
 
 ## Token Metadata
 
-### Set Token Metadata
-
-```bash
-# Set metadata for your token
-arch-cli token set-metadata \
-  --mint $MINT \
-  --name "My Awesome Token" \
-  --symbol "MAT" \
-  --description "A demonstration token for Arch Network" \
-  --image "https://example.com/token-image.png" \
-  --mint-authority ~/DEMO_KEYS/mint_authority.key \
-  --keypair-path ~/DEMO_KEYS/payer.key
-```
-
-### View Token Metadata
-
-```bash
-# View the token metadata
-arch-cli token show-metadata --mint $MINT
-```
+The `arch-network` workspace includes an `apl-token-metadata` crate, but the current `arch-cli token` command set does not expose `set-metadata` or `show-metadata` subcommands. Interact with token metadata through client transactions until CLI support is added.
 
 ## Batch Operations
 
@@ -317,7 +298,7 @@ arch-cli token batch-transfer ./transfers.json \
 **Insufficient Balance:**
 ```bash
 # Check account balance before operations
-arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner.key
+arch-cli token show-account "$TOKEN_ACCOUNT"
 ```
 
 **Invalid Authority:**
@@ -387,7 +368,7 @@ export MINT=$(NO_COLOR=1 arch-cli token show-mint ~/DEMO_KEYS/mint.key | awk -F'
 **Account Not Found:**
 ```bash
 # Ensure the token account exists
-arch-cli token show-account --mint $MINT --owner ~/DEMO_KEYS/token_account_owner.key
+arch-cli token show-account "$TOKEN_ACCOUNT"
 ```
 
 ### Debug Commands
@@ -431,76 +412,7 @@ arch-cli tx log-program-messages <SIGNATURE>
 
 ## Integration Examples
 
-### TypeScript Integration
-
-```typescript
-import { ArchNetworkClient } from '@arch-network/sdk';
-
-const client = new ArchNetworkClient('http://localhost:9002');
-
-// Create a token mint
-const mint = await client.createTokenMint({
-  decimals: 6,
-  mintAuthority: mintAuthorityKeypair,
-  payer: payerKeypair
-});
-
-// Create a token account
-const tokenAccount = await client.createTokenAccount({
-  mint: mint.publicKey,
-  owner: ownerKeypair.publicKey,
-  payer: payerKeypair
-});
-
-// Mint tokens
-await client.mintTo({
-  mint: mint.publicKey,
-  destination: tokenAccount,
-  amount: 1000000000,
-  mintAuthority: mintAuthorityKeypair
-});
-```
-
-### Rust Integration
-
-```rust
-use arch_network_sdk::prelude::*;
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = ArchNetworkClient::new("http://localhost:9002").await?;
-    
-    // Create token mint
-    let mint = client.create_token_mint(
-        CreateTokenMintParams {
-            decimals: 6,
-            mint_authority: &mint_authority_keypair,
-            payer: &payer_keypair,
-        }
-    ).await?;
-    
-    // Create token account
-    let token_account = client.create_token_account(
-        CreateTokenAccountParams {
-            mint: mint.pubkey(),
-            owner: owner_keypair.pubkey(),
-            payer: &payer_keypair,
-        }
-    ).await?;
-    
-    // Mint tokens
-    client.mint_to(
-        MintToParams {
-            mint: mint.pubkey(),
-            destination: token_account,
-            amount: 1000000000,
-            mint_authority: &mint_authority_keypair,
-        }
-    ).await?;
-    
-    Ok(())
-}
-```
+Use the CLI examples above for end-to-end token operations. For custom integrations, construct and submit token instructions with the SDK or the `send_transaction` RPC method.
 
 ## Next Steps
 
@@ -514,7 +426,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   <Card title="Lending Protocol" href="/docs/defi-applications/how-to-build-lending-protocol">
     Create a lending protocol
   </Card>
-  <Card title="APL Documentation" href="/docs/APL/token-program">
+  <Card title="APL Documentation" href="/docs/apl/token-program">
     Deep dive into the APL Token Program
   </Card>
 </Cards>
@@ -522,7 +434,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## Resources
 
 <Cards>
-  <Card title="APL Token Program" href="/docs/APL/token-program">
+  <Card title="APL Token Program" href="/docs/apl/token-program">
     Complete APL Token Program documentation
   </Card>
   <Card title="SDK Reference" href="/docs/tools-apis/sdk">

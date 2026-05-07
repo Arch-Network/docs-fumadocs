@@ -90,7 +90,7 @@ Configuration:
 cargo run -p bootnode -- \
     --network-mode localnet \
     --p2p-bind-port 19001 \
-    --leader-peer-id "<LEADER_ID>" \
+    --leader-public-key "<LEADER_PUBLIC_KEY>" \
     --validator-whitelist "<VALIDATOR_IDS>"
 ```
 
@@ -371,7 +371,7 @@ arch-cli orchestrate start
 
 # Services:
 # - Bitcoin Core: http://127.0.0.1:18443
-# - Titan API: http://127.0.0.1:8080
+# - Titan API: http://127.0.0.1:3030
 # - Validator RPC: http://127.0.0.1:9002
 ```
 
@@ -388,8 +388,11 @@ arch-cli orchestrate start
 # Configure for testnet (using the public Arch RPC endpoint)
 arch-cli config create-profile testnet \
     --bitcoin-node-endpoint http://bitcoin-rpc.test.arch.network:80 \
+    --bitcoin-node-username bitcoin \
+    --bitcoin-node-password <PASSWORD> \
     --bitcoin-network testnet \
-    --arch-node-url https://rpc.testnet.arch.network
+    --arch-node-url https://rpc.testnet.arch.network \
+    --titan-url https://titan.testnet.arch.network
 ```
 
 ### Mainnet Configuration
@@ -398,8 +401,11 @@ arch-cli config create-profile testnet \
 # Configure for mainnet (using the public Arch RPC endpoint)
 arch-cli config create-profile mainnet \
     --bitcoin-node-endpoint <YOUR_BITCOIN_RPC_ENDPOINT> \
+    --bitcoin-node-username <USERNAME> \
+    --bitcoin-node-password <PASSWORD> \
     --bitcoin-network mainnet \
-    --arch-node-url https://rpc.mainnet.arch.network
+    --arch-node-url https://rpc.mainnet.arch.network \
+    --titan-url <YOUR_TITAN_ENDPOINT>
 ```
 
 ## Monitoring and Telemetry
@@ -407,14 +413,16 @@ arch-cli config create-profile mainnet \
 ### Health Checks
 
 ```bash
-# Check validator health
-curl http://localhost:9002/health
+# Check validator readiness
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "is_node_ready", "params": []}'
 
 # Check Bitcoin connection
 bitcoin-cli -regtest getblockchaininfo
 
 # Check Titan status
-curl http://localhost:8080/health
+curl http://localhost:3030
 ```
 
 ### Metrics

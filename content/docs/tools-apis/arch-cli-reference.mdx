@@ -3,19 +3,19 @@ title: "Arch CLI Reference Guide"
 description: "Complete reference for all Arch Network CLI commands and options"
 ---
 
-This comprehensive guide covers all available commands and options in the Arch Network CLI tool.
+This guide covers the command surface exposed by `arch-cli`.
 
 ## Table of Contents
 
 - [Global Options](#global-options)
 - [Configuration Management](#configuration-management)
-- [Validator Management](#validator-management)
 - [Account Operations](#account-operations)
 - [Program Deployment](#program-deployment)
 - [Transaction Operations](#transaction-operations)
 - [Block and Network Info](#block-and-network-info)
 - [APL Token Operations](#apl-token-operations)
 - [Orchestration Commands](#orchestration-commands)
+- [Bootnode Commands](#bootnode-commands)
 - [Error Reference](#error-reference)
 
 ## Global Options
@@ -24,7 +24,7 @@ These options can be used with any command:
 
 ```bash
 # Specify network mode
-arch-cli --network-mode devnet|testnet|mainnet|localnet
+arch-cli --network-mode localnet|devnet|testnet|mainnet
 
 # Use configuration profile
 arch-cli --profile <PROFILE_NAME>
@@ -41,16 +41,16 @@ All user-facing identifiers in arch-cli (addresses, public keys, transaction IDs
 ::::
 
 **Network Modes:**
-- `devnet`: Development network (default)
+- `localnet`: Local development network
+- `devnet`: Development network, and the default for `arch-cli`
 - `testnet`: Test network
 - `mainnet`: Production network
-- `localnet`: Local development network
 
 ## Configuration Management
 
 ### Create Profile
 
-Create a new configuration profile for connecting to Bitcoin and Arch Network nodes:
+Create a new configuration profile for connecting to Bitcoin, Arch, and Titan nodes:
 
 ```bash
 arch-cli config create-profile <NAME> \
@@ -58,54 +58,46 @@ arch-cli config create-profile <NAME> \
     --bitcoin-node-username <USERNAME> \
     --bitcoin-node-password <PASSWORD> \
     --bitcoin-network <NETWORK> \
-    --arch-node-url <URL>
+    --arch-node-url <URL> \
+    --titan-url <URL>
 ```
 
 **Arguments:**
 - `<NAME>`: Name of the profile
-- `--bitcoin-node-endpoint`: Bitcoin node endpoint URL (e.g., "http://127.0.0.1:18443")
+- `--bitcoin-node-endpoint`: Bitcoin node endpoint URL, for example `http://127.0.0.1:18443`
 - `--bitcoin-node-username`: Bitcoin node RPC username
 - `--bitcoin-node-password`: Bitcoin node RPC password
-- `--bitcoin-network`: Bitcoin network ("mainnet", "testnet", or "regtest")
+- `--bitcoin-network`: Bitcoin network, such as `mainnet`, `testnet`, or `regtest`
 - `--arch-node-url`: Arch Network node URL
+- `--titan-url`: Titan node URL
 
 **Example (testnet):**
+
 ```bash
 arch-cli config create-profile testnet \
     --bitcoin-node-endpoint http://bitcoin-rpc.test.arch.network:80 \
     --bitcoin-node-username bitcoin \
     --bitcoin-node-password 0F_Ed53o4kR7nxh3xNaSQx-2M3TY16L55mz5y9fjdrk \
     --bitcoin-network testnet \
-    --arch-node-url https://rpc.testnet.arch.network
+    --arch-node-url https://rpc.testnet.arch.network \
+    --titan-url https://titan.testnet.arch.network
 ```
 
-:::note
+::::note
 Public Arch RPC endpoints:
 - **Testnet:** `https://rpc.testnet.arch.network`
 - **Mainnet:** `https://rpc.mainnet.arch.network`
 
 For local development, use `http://localhost:9002`.
-:::
+::::
 
 ### List Profiles
-
-List all available configuration profiles:
 
 ```bash
 arch-cli config list-profiles
 ```
 
-### Show Profile
-
-Display detailed information about a specific profile:
-
-```bash
-arch-cli config show-profile <NAME>
-```
-
 ### Update Profile
-
-Update an existing profile's settings:
 
 ```bash
 arch-cli config update-profile <NAME> \
@@ -118,68 +110,27 @@ arch-cli config update-profile <NAME> \
 
 ### Set Default Profile
 
-Set a profile as the default for all operations:
-
 ```bash
 arch-cli config set-default-profile <NAME>
 ```
 
-## Validator Management
-
-### Start Validator
-
-Start a local validator node:
+### Delete Profile
 
 ```bash
-arch-cli validator start \
-    [--bitcoin-node-endpoint <URL>] \
-    [--bitcoin-node-username <USERNAME>] \
-    [--bitcoin-node-password <PASSWORD>] \
-    [--bitcoin-network <NETWORK>] \
-    [--arch-node-url <URL>]
-```
-
-### Stop Validator
-
-Stop the running validator node:
-
-```bash
-arch-cli validator stop
-```
-
-### Validator Status
-
-Check the status of the validator node:
-
-```bash
-arch-cli validator status
-```
-
-### Validator Logs
-
-View validator logs:
-
-```bash
-arch-cli validator logs [--follow]
+arch-cli config delete-profile <NAME>
 ```
 
 ## Account Operations
 
 ### Create Account
 
-Create a new account:
+Generate a new keypair, optionally funding the account from the faucet:
 
 ```bash
 arch-cli account create \
     --keypair-path <PATH> \
-    [--space <BYTES>] \
-    [--owner <PROGRAM_ID>]
+    [--airdrop]
 ```
-
-**Arguments:**
-- `--keypair-path`: Path to the keypair file
-- `--space`: Account space in bytes (optional)
-- `--owner`: Program ID that owns the account (optional)
 
 ### Airdrop
 
@@ -187,264 +138,200 @@ Request an airdrop of lamports to an account:
 
 ```bash
 arch-cli account airdrop \
-    --keypair-path <PATH> \
+    (--keypair-path <PATH> | --account <PUBKEY> | --pubkey <PUBKEY>) \
     [--amount <LAMPORTS>]
 ```
 
-**Arguments:**
-- `--keypair-path`: Path to the keypair file
-- `--amount`: Amount of lamports to airdrop (optional, defaults to 1 SOL)
+The default amount is `1000000` lamports.
 
 ### Show Account
 
-Display account information:
+Display account or program information:
 
 ```bash
-arch-cli account show <PUBKEY>
+arch-cli show <PUBKEY>
 ```
 
-### Show Balance
-
-Display account balance:
+### Change Account Owner
 
 ```bash
-arch-cli account balance <PUBKEY>
+arch-cli account change-owner <ACCOUNT_ADDRESS> <NEW_OWNER> <PAYER_KEYPAIR_PATH>
+```
+
+### Assign UTXO
+
+```bash
+arch-cli account assign-utxo <ACCOUNT_PUBKEY>
 ```
 
 ## Program Deployment
 
-### Deploy Program
-
 Deploy a program to the network:
 
 ```bash
-arch-cli program deploy <PROGRAM_PATH> \
-    [--program-id <PROGRAM_ID>] \
-    [--keypair-path <PATH>]
+arch-cli deploy [ELF_PATH] [--generate-if-missing] [--fund-authority]
 ```
 
 **Arguments:**
-- `<PROGRAM_PATH>`: Path to the compiled program (.so file)
-- `--program-id`: Program ID keypair path (optional)
-- `--keypair-path`: Payer keypair path (optional)
+- `ELF_PATH`: Optional path to the compiled ELF directory. If omitted, the CLI uses `./target/deploy`.
+- `--generate-if-missing`: Generate missing program and authority keypairs in the deploy directory.
+- `--fund-authority`: Fund the generated authority account using the faucet.
 
-### Show Program
-
-Display program information:
-
-```bash
-arch-cli program show <PROGRAM_ID>
-```
-
-### Call Program
-
-Call a program with specific instructions:
-
-```bash
-arch-cli program call <PROGRAM_ID> \
-    --accounts <ACCOUNT_PATHS> \
-    --instruction-data <DATA> \
-    [--keypair-path <PATH>]
-```
-
-**Arguments:**
-- `<PROGRAM_ID>`: Program ID to call
-- `--accounts`: Comma-separated list of account keypair paths
-- `--instruction-data`: Base64-encoded instruction data
-- `--keypair-path`: Payer keypair path (optional)
+::::note
+`arch-cli` does not expose generic `program show` or `program call` subcommands. Use `arch-cli show <PUBKEY>` to inspect an account or program, and use the SDK/RPC APIs to submit custom transactions.
+::::
 
 ## Transaction Operations
 
-### Send Transaction
-
-Send a transaction to the network:
+Transaction commands are grouped under `tx`.
 
 ```bash
-arch-cli transaction send <TRANSACTION_PATH> \
-    [--keypair-path <PATH>]
-```
-
-### Show Transaction
-
-Display transaction information:
-
-```bash
-arch-cli transaction show <SIGNATURE>
-```
-
-### Transaction Status
-
-Check transaction status:
-
-```bash
-arch-cli transaction status <SIGNATURE>
+arch-cli tx confirm <TX_ID>
+arch-cli tx get <TX_ID>
+arch-cli tx log-program-messages <TX_ID>
 ```
 
 ## Block and Network Info
 
 ### Get Block Height
 
-Get the current block height:
-
 ```bash
 arch-cli get-block-height
 ```
 
-### Get Block Hash
-
-Get the block hash for a specific height:
-
-```bash
-arch-cli get-block-hash <HEIGHT>
-```
-
 ### Get Block
 
-Get block information:
+Get a block by its base58 block hash:
 
 ```bash
 arch-cli get-block <BLOCK_HASH>
 ```
 
-### Network Info
-
-Get network information:
+### Get Network Public Key
 
 ```bash
-arch-cli network info
+arch-cli get-network-pubkey <PUBKEY>
 ```
+
+::::note
+The current CLI argument for `get-network-pubkey` is retained for compatibility, but the command fetches the network public key from the active node.
+::::
 
 ## APL Token Operations
 
-### Create Token Mint
-
-Create a new token mint:
+### Core Token Commands
 
 ```bash
+# Create a mint
 arch-cli token create-mint \
     --decimals <DECIMALS> \
     --mint-authority <AUTHORITY_PATH> \
+    [--freeze-authority <AUTHORITY_PATH>] \
     [--mint-keypair-path <PATH>] \
-    [--keypair-path <PATH>]
-```
+    --keypair-path <PATH>
 
-**Arguments:**
-- `--decimals`: Number of decimal places
-- `--mint-authority`: Path to mint authority keypair
-- `--mint-keypair-path`: Path to mint keypair (optional)
-- `--keypair-path`: Payer keypair path (optional)
+# Inspect a mint
+arch-cli token show-mint <MINT_ADDRESS>
 
-### Create Token Account
-
-Create a new token account:
-
-```bash
+# Create a token account
 arch-cli token create-account \
     --mint <MINT_ADDRESS> \
     --owner <OWNER_PATH> \
+    --keypair-path <PATH>
+
+# Inspect a token account
+arch-cli token show-account <TOKEN_ACCOUNT_ADDRESS>
+
+# Mint tokens
+arch-cli token mint \
+    <MINT_ADDRESS> \
+    <AMOUNT> \
+    --authority <AUTHORITY_PATH> \
+    [--account-address <TOKEN_ACCOUNT_ADDRESS>] \
+    [--auto-create-ata] \
+    [--multisig <MULTISIG_ADDRESS>] \
+    [--signers <SIGNER_PATHS>...] \
     [--keypair-path <PATH>]
-```
 
-**Arguments:**
-- `--mint`: Token mint address
-- `--owner`: Path to owner keypair
-- `--keypair-path`: Payer keypair path (optional)
-
-### Mint Tokens
-
-Mint tokens to an account:
-
-```bash
-arch-cli token mint-to \
-    --mint <MINT_ADDRESS> \
-    --destination <DESTINATION_ADDRESS> \
-    --amount <AMOUNT> \
-    --mint-authority <AUTHORITY_PATH> \
-    [--keypair-path <PATH>]
-```
-
-**Arguments:**
-- `--mint`: Token mint address
-- `--destination`: Destination token account address
-- `--amount`: Amount of tokens to mint
-- `--mint-authority`: Path to mint authority keypair
-- `--keypair-path`: Payer keypair path (optional)
-
-### Transfer Tokens
-
-Transfer tokens between accounts:
-
-```bash
+# Transfer tokens
 arch-cli token transfer \
-    --source <SOURCE_ADDRESS> \
-    --destination <DESTINATION_ADDRESS> \
-    --amount <AMOUNT> \
+    <SOURCE_ACCOUNT> \
+    <DESTINATION_ACCOUNT> \
+    <AMOUNT> \
     --owner <OWNER_PATH> \
+    [--multisig <MULTISIG_ADDRESS>] \
+    [--signers <SIGNER_PATHS>...] \
     [--keypair-path <PATH>]
 ```
 
-**Arguments:**
-- `--source`: Source token account address
-- `--destination`: Destination token account address
-- `--amount`: Amount of tokens to transfer
-- `--owner`: Path to owner keypair
-- `--keypair-path`: Payer keypair path (optional)
+### Additional Token Commands
 
-### Show Token Account
+The CLI also exposes these token subcommands:
 
-Display token account information:
-
-```bash
-arch-cli token show-account \
-    --mint <MINT_ADDRESS> \
-    --owner <OWNER_PATH>
-```
-
-### Show Token Mint
-
-Display token mint information:
-
-```bash
-arch-cli token show-mint <MINT_ADDRESS>
-```
+- `burn <ACCOUNT_ADDRESS> <AMOUNT> --owner <OWNER_PATH>`
+- `approve <ACCOUNT_ADDRESS> <DELEGATE_ADDRESS> <AMOUNT> --owner <OWNER_PATH>`
+- `revoke <ACCOUNT_ADDRESS> --owner <OWNER_PATH>`
+- `freeze-account <ACCOUNT_ADDRESS> --authority <AUTHORITY_PATH>`
+- `thaw-account <ACCOUNT_ADDRESS> --authority <AUTHORITY_PATH>`
+- `create-multisig <M> --signers <SIGNER_PATHS>... --keypair-path <PATH>`
+- `multisig-sign <MULTISIG_ADDRESS> <TRANSACTION> --keypair-path <PATH>`
+- `multisig-execute <MULTISIG_ADDRESS> <TRANSACTION> --signers <SIGNER_PATHS>... --keypair-path <PATH>`
+- `multisig-show <MULTISIG_ADDRESS>`
+- `balance <ACCOUNT_ADDRESS>`
+- `supply <MINT_ADDRESS>`
+- `accounts <MINT_ADDRESS>`
+- `mints`
+- `amount-to-ui <MINT_ADDRESS> <AMOUNT>`
+- `ui-to-amount <MINT_ADDRESS> <UI_AMOUNT>`
+- `transfer-checked <SOURCE_ACCOUNT> <DESTINATION_ACCOUNT> <AMOUNT> <DECIMALS> --owner <OWNER_PATH>`
+- `approve-checked <ACCOUNT_ADDRESS> <DELEGATE_ADDRESS> <AMOUNT> <DECIMALS> --owner <OWNER_PATH>`
+- `mint-to-checked <MINT_ADDRESS> <ACCOUNT_ADDRESS> <AMOUNT> <DECIMALS> --authority <AUTHORITY_PATH>`
+- `burn-checked <ACCOUNT_ADDRESS> <AMOUNT> <DECIMALS> --owner <OWNER_PATH>`
+- `set-authority <TARGET_ADDRESS> --authority-type <TYPE> --current-authority <PATH> [--new-authority <ADDRESS|none>]`
+- `close-account <ACCOUNT_ADDRESS> <DESTINATION_ADDRESS> --owner <OWNER_PATH>`
+- `batch-transfer <TRANSFERS_FILE> --keypair-path <PATH>`
+- `batch-mint <MINTS_FILE> --keypair-path <PATH>`
 
 ## Orchestration Commands
 
-### Start Orchestration
-
-Start the complete local development environment:
+### Start Local Environment
 
 ```bash
 arch-cli orchestrate start \
-    [--bitcoin-node-endpoint <URL>] \
-    [--bitcoin-node-username <USERNAME>] \
-    [--bitcoin-node-password <PASSWORD>] \
-    [--bitcoin-network <NETWORK>]
+    [--rebuild-titan] \
+    [--local <ARCH_NETWORK_SOURCE_DIR>] \
+    [--force-rebuild] \
+    [--titan-image <IMAGE>] \
+    [--no-bitcoind]
 ```
 
-### Stop Orchestration
+### Service Lifecycle
 
-Stop the local development environment:
+- `arch-cli orchestrate stop`
+- `arch-cli orchestrate validator-start`
+- `arch-cli orchestrate validator-stop`
+- `arch-cli orchestrate validator-restart`
+- `arch-cli orchestrate validator-status`
+- `arch-cli orchestrate reset`
+- `arch-cli orchestrate validator-reset`
+
+### Mine Regtest Blocks
 
 ```bash
-arch-cli orchestrate stop
+arch-cli orchestrate mine-blocks --num-blocks <COUNT>
 ```
 
-### Orchestration Status
+## Bootnode Commands
 
-Check the status of orchestrated services:
+Manage the local bootnode whitelist:
 
 ```bash
-arch-cli orchestrate status
+arch-cli bootnode add-validator <PUBKEY> [BOOTNODE_PORT]
+arch-cli bootnode remove-validator <PUBKEY> [BOOTNODE_PORT]
+arch-cli bootnode fetch-whitelist [BOOTNODE_PORT]
 ```
 
-### Orchestration Logs
-
-View logs from orchestrated services:
-
-```bash
-arch-cli orchestrate logs [--service <SERVICE_NAME>]
-```
+The default bootnode RPC port is `19021`.
 
 ## Error Reference
 
@@ -462,32 +349,29 @@ arch-cli orchestrate logs [--service <SERVICE_NAME>]
 ### Troubleshooting
 
 **Connection Issues:**
-```bash
-# Check if the node is running
-arch-cli validator status
 
-# Check network connectivity
+```bash
+# Check if the node is ready
 curl -X POST http://localhost:9002 \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "is_node_ready", "params": []}'
+
+# Check network version
+curl -X POST http://localhost:9002 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "get_version", "params": []}'
 ```
 
 **Account Issues:**
-```bash
-# Check account balance
-arch-cli account balance <PUBKEY>
 
-# Check account info
-arch-cli account show <PUBKEY>
+```bash
+arch-cli show <PUBKEY>
 ```
 
 **Program Issues:**
-```bash
-# Check program info
-arch-cli program show <PROGRAM_ID>
 
-# Check program accounts
-arch-cli program accounts <PROGRAM_ID>
+```bash
+arch-cli show <PROGRAM_ID>
 ```
 
 ## Best Practices
@@ -503,12 +387,11 @@ arch-cli program accounts <PROGRAM_ID>
 - Backup important keypairs
 
 ### 3. Transaction Management
-- Always check transaction status
-- Use appropriate fees
+- Confirm submitted transactions with `arch-cli tx confirm <TX_ID>`
 - Handle errors gracefully
 
 ### 4. Development Workflow
-- Use local development environment
+- Use the local development environment for iterative work
 - Test thoroughly before deploying
 - Monitor logs for issues
 
@@ -526,7 +409,8 @@ arch-cli config create-profile local \
     --bitcoin-node-username bitcoin \
     --bitcoin-node-password bitcoinpass \
     --bitcoin-network regtest \
-    --arch-node-url http://localhost:9002
+    --arch-node-url http://localhost:9002 \
+    --titan-url http://localhost:3030
 
 # 3. Set as default
 arch-cli config set-default-profile local
@@ -536,11 +420,9 @@ arch-cli account create --keypair-path ~/my_account.key
 arch-cli account airdrop --keypair-path ~/my_account.key
 
 # 5. Deploy a program
-arch-cli program deploy target/deploy/my_program.so \
-    --keypair-path ~/my_account.key
+arch-cli deploy target/deploy
 
 # 6. Check status
-arch-cli validator status
 arch-cli get-block-height
 ```
 
@@ -560,18 +442,18 @@ arch-cli token create-account \
     --keypair-path ~/payer.key
 
 # 3. Mint tokens
-arch-cli token mint-to \
-    --mint <MINT_ADDRESS> \
-    --destination <TOKEN_ACCOUNT> \
-    --amount 1000000000 \
-    --mint-authority ~/mint_authority.key \
+arch-cli token mint \
+    <MINT_ADDRESS> \
+    1000000000 \
+    --account-address <TOKEN_ACCOUNT> \
+    --authority ~/mint_authority.key \
     --keypair-path ~/payer.key
 
 # 4. Transfer tokens
 arch-cli token transfer \
-    --source <SOURCE_ACCOUNT> \
-    --destination <DESTINATION_ACCOUNT> \
-    --amount 500000000 \
+    <SOURCE_ACCOUNT> \
+    <DESTINATION_ACCOUNT> \
+    500000000 \
     --owner ~/owner.key \
     --keypair-path ~/payer.key
 ```
@@ -596,8 +478,8 @@ arch-cli token transfer \
 ## Resources
 
 <Cards>
-  <Card title="Arch Network Repository" href="https://github.com/Arch-Network/arch-network" external>
-    Source code and issues
+  <Card title="Community Discord" href="https://discord.gg/archnetwork" external>
+    Get help from the community
   </Card>
   <Card title="Arch Examples" href="https://github.com/Arch-Network/arch-examples" external>
     Example programs and applications

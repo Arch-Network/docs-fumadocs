@@ -10,13 +10,13 @@ Welcome to Arch Network! Let's get your first program running in under 15 minute
 Before starting, ensure you have the following tools installed:
 
 - **Git** (v2.0 or later)
-- **Rust** (v1.84.1 or later) - [Install Rust](https://rustup.rs/)
-- **Solana CLI** (v2.2.14 or later) - [Install Solana](https://docs.solana.com/cli/install-solana-cli-tools)
-- **Arch Network CLI** - Download from [Arch Network Releases](https://github.com/Arch-Network/arch-node/releases/latest)
+- **Rust** (v1.94.0) - [Install Rust](https://rustup.rs/)
+- **Solana/Agave CLI** (v3.1.9 or later) - provides `cargo-build-sbf`
+- **Arch Network CLI** - Install using the [System Requirements guide](/docs/quick-start/requirements)
 - **Docker** - Required for local development - [Install Docker](https://docs.docker.com/engine/install/)
 
 <Warning>
-**Important**: Arch Network now requires Solana CLI 2.x. Please ensure you have version 2.2.14 or later installed.
+**Important**: Arch Network currently uses Rust 1.94.0 for host builds. `cargo-build-sbf` from the Solana/Agave CLI manages its own bundled SBF toolchain.
 </Warning>
 
 Verify your installation:
@@ -89,7 +89,8 @@ arch-cli config create-profile testnet \
     --bitcoin-node-username bitcoin \
     --bitcoin-node-password 0F_Ed53o4kR7nxh3xNaSQx-2M3TY16L55mz5y9fjdrk \
     --bitcoin-network testnet \
-    --arch-node-url https://rpc.testnet.arch.network
+    --arch-node-url https://rpc.testnet.arch.network \
+    --titan-url https://titan.testnet.arch.network
 
 # 2. Set as default profile
 arch-cli config set-default-profile testnet
@@ -242,8 +243,8 @@ arch-cli orchestrate validator-status
   <Card title="Discord" href="https://discord.gg/archnetwork" external>
     Get support from the community
   </Card>
-  <Card title="GitHub Issues" href="https://github.com/Arch-Network/arch-node/issues" external>
-    Report bugs and request features
+  <Card title="Community Discord" href="https://discord.gg/archnetwork" external>
+    Report bugs and request help
   </Card>
   <Card title="Documentation" href="https://docs.arch.network" external>
     Browse the full documentation

@@ -2,7 +2,7 @@
 title: "Program"
 ---
 
-A program is a special kind of [account] that contains executable [eBPF] bytecode, denoted by the `Account.is_executable: true` field. This allows an account to receive arbitrary [instruction] data via a [transaction] to be processed by the runtime.
+A program is a special kind of [account] that contains executable SBF/sBPF bytecode, denoted by the `Account.is_executable: true` field. This allows an account to receive arbitrary [instruction] data via a [transaction] to be processed by the runtime.
 
 Every program is stateless, meaning that it can only read/write data to other accounts and that it cannot write to its own account; this, in-part, is how parallelized execution is made possible (see [State] for more info).
 
@@ -46,12 +46,11 @@ The program will likely include a struct to define the structure of its state an
 
 <!-- Internal -->
 [State]: #4-state
-[eBPF]: https://ebpf.io
 [account]: ./accounts.md
-[pubkey]: ../sdk/pubkey.md
+[pubkey]: ./accounts.md
 [entrypoint]: ./entrypoint.md
 [instruction]: ./instructions-and-messages.md#instructions
-[transaction]: ../sdk/runtime-transaction.md
+[transaction]: ./instructions-and-messages.md#transaction-structure
 [handler function]: ./entrypoint.md#handler-function
  
 <!-- External -->

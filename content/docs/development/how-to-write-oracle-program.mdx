@@ -139,7 +139,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-arch-program = "0.6.2"
+arch_program = "0.6.4"
 borsh = "1.0"
 ```
 
@@ -227,8 +227,8 @@ Once you have your oracle program written, you can deploy it to the Arch Network
 # Build the program
 cargo build-sbf
 
-# Deploy the program
-arch-cli program deploy target/deploy/oracle.so
+# Deploy the program from the build output directory
+arch-cli deploy target/deploy
 ```
 
 ### Create a State Account
@@ -236,12 +236,9 @@ arch-cli program deploy target/deploy/oracle.so
 After deploying your oracle program, you need to create a state account that will hold the oracle data:
 
 ```bash
-# Create a new account for storing oracle data
-arch-cli account create \
-  --keypair-path ~/oracle_state.key \
-  --space 1024 \
-  --owner <ORACLE_PROGRAM_ID> \
-  --keypair-path ~/payer.key
+# Create a new keypair for the oracle state account.
+# Account allocation/ownership is submitted as a transaction by your client.
+arch-cli account create --keypair-path ~/oracle_state.key
 ```
 
 ### Update the State Account
@@ -249,11 +246,8 @@ arch-cli account create \
 Now you can update the oracle data by calling your program:
 
 ```bash
-# Update oracle data with new information
-arch-cli program call <ORACLE_PROGRAM_ID> \
-  --accounts ~/oracle_state.key \
-  --instruction-data <ENCODED_DATA> \
-  --keypair-path ~/oracle_authority.key
+# Update oracle data with new information by submitting a RuntimeTransaction
+# through the Rust/TypeScript SDK or the send_transaction RPC method.
 ```
 
 ### Read from the State Account
@@ -477,14 +471,10 @@ mod tests {
 ### Integration Tests
 
 ```bash
-# Test oracle update
-arch-cli program call <ORACLE_PROGRAM_ID> \
-  --accounts ~/oracle_state.key \
-  --instruction-data $(echo '{"price": 50000, "decimals": 8, "timestamp": 1640995200, "source": "coinbase"}' | base64) \
-  --keypair-path ~/oracle_authority.key
+# Test oracle update by sending an instruction transaction from your client.
 
 # Verify the update
-arch-cli account show ~/oracle_state.key
+arch-cli show <ORACLE_STATE_PUBKEY>
 ```
 
 ## Best Practices

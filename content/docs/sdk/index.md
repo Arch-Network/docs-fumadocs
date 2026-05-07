@@ -1,173 +1,113 @@
 # SDK Reference
 
-The Arch Network ecosystem provides two distinct SDKs for building applications. Each SDK serves different use cases and development environments. This page will help you choose the right SDK for your project.
+Arch documentation covers two SDK surfaces:
 
-## Available SDKs
+- The **Rust SDK**, published as the `arch_sdk` crate.
+- The external **TypeScript SDK**, published as `@arch-network/arch-sdk`.
 
-### 1. TypeScript SDK
+This page is audited against the Rust SDK source available to the Arch team. TypeScript examples are covered separately and should be checked against the TypeScript SDK repository before release.
 
-The **TypeScript SDK** provides a comprehensive JavaScript/TypeScript interface for interacting with the Arch Network.
+## Rust SDK
 
-**Package**: `@arch-network/arch-sdk`  
-**Repository**: [arch-typescript-sdk](https://github.com/Arch-Network/arch-typescript-sdk)  
-**Language**: TypeScript/JavaScript  
-**Best for**: 
-- Frontend applications (React, Vue, Angular)
-- Node.js backend services
-- Web3 applications
-- Rapid prototyping
-- JavaScript/TypeScript developers
+Use the Rust SDK when building backend services, tooling, tests, or other Rust clients that talk to an Arch validator.
 
-### 2. Rust SDK
-
-The **Rust SDK** is the native SDK included in the main Arch Network repository. It provides low-level access to all network features and is used for building high-performance applications and programs.
-
-**Package**: `arch_sdk`  
-**Repository**: Part of [arch-network](https://github.com/Arch-Network/arch-network)  
-**Language**: Rust  
-**Best for**:
-- On-chain programs (smart contracts)
-- High-performance applications
-- System-level integrations
-- Validator/node development
-- Rust developers
-
-## Choosing the Right SDK
-
-### Use the TypeScript SDK when:
-- Building web applications or dApps
-- Working with Node.js backends
-- Integrating Arch Network into existing JavaScript projects
-- You need quick development cycles
-- Your team is more familiar with JavaScript/TypeScript
-
-### Use the Rust SDK when:
-- Writing on-chain programs for Arch Network
-- Building high-performance applications
-- Developing system-level tools or validators
-- You need maximum control and efficiency
-- Your team is comfortable with Rust
-
-## Quick Start Comparison
-
-### TypeScript SDK Installation
-```bash
-npm install @arch-network/arch-sdk
-# or
-yarn add @arch-network/arch-sdk
-```
-
-### Rust SDK Installation
 ```toml
-# In your Cargo.toml
 [dependencies]
-arch_sdk = "0.6.2"
+arch_sdk = "0.6.4"
 ```
 
-### Basic Connection Example
+The crate re-exports:
 
-**TypeScript SDK:**
-```typescript
-import { RpcConnection } from '@arch-network/arch-sdk';
+- `arch_program` types
+- RPC clients from `client`
+- helpers from `helper`
+- serializable data types from `types`
 
-const connection = new RpcConnection('http://localhost:9002');
+## RPC Clients
 
-const blockCount = await connection.getBlockCount();
-console.log('Block count:', blockCount);
-```
+The Rust SDK exposes both async and blocking clients:
 
-**Rust SDK:**
 ```rust
-use arch_sdk::{Connection, Keypair};
+use arch_sdk::{ArchRpcClient, Config};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let connection = Connection::new("http://localhost:9002");
-    let keypair = Keypair::new();
-    
-    let is_ready = connection.is_node_ready().await?;
-    println!("Node ready: {}", is_ready);
-    
+    let config = Config::localnet();
+    let client = ArchRpcClient::new(&config);
+
+    let ready = client.call_method::<bool>("is_node_ready").await?;
+    println!("Node ready: {:?}", ready);
+
     Ok(())
 }
 ```
 
-## Documentation Structure
+For synchronous code, use `BlockingArchRpcClient`:
 
-### TypeScript SDK Documentation
-- [Getting Started with TypeScript SDK](typescript/getting-started.md)
-- [TypeScript API Reference](typescript/api-reference.md)
-- [TypeScript Examples](typescript/examples.md)
-- [Web3 Integration Guide](typescript/web3-integration.md)
+```rust
+use arch_sdk::{BlockingArchRpcClient, Config};
 
-### Rust SDK Documentation  
-- [Getting Started with Rust SDK](rust/getting-started.md)
-- [Rust API Reference](rust/api-reference.md)
-- [Program Development Guide](rust/program-development.md)
-- [Rust Examples](rust/examples.md)
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = Config::localnet();
+    let client = BlockingArchRpcClient::new(&config);
 
-### Shared Concepts
-These concepts apply to both SDKs:
-- [Pubkey](pubkey.md) - Public key type for identifying accounts
-- [Account](account.md) - Account structure and management
-- [Instructions and Messages](instructions-and-messages.md) - Transaction building
-- [Runtime Transaction](runtime-transaction.md) - Transaction format
-- [Processed Transaction](processed-transaction.md) - Transaction results
-- [Signature](signature.md) - Digital signatures
+    let block_count = client.get_block_count()?;
+    println!("Block count: {}", block_count);
 
-## Feature Comparison
+    Ok(())
+}
+```
 
-| Feature | TypeScript SDK | Rust SDK |
-|---------|---------------|----------|
-| Language | TypeScript/JavaScript | Rust |
-| Installation | npm/yarn | Cargo |
-| Async Support | Promises/async-await | Tokio async |
-| Program Development | Client-side only | Full support |
-| Browser Support | ✅ Full | ❌ No |
-| Node.js Support | ✅ Full | ✅ Full |
-| Performance | Good | Excellent |
-| Type Safety | TypeScript types | Rust type system |
-| Bundle Size | ~200KB | N/A |
-| Learning Curve | Moderate | Steep |
+## Configuration
 
-## Migration Between SDKs
+`Config::localnet()` points at the standard local stack:
 
-While both SDKs interact with the same Arch Network, they have different APIs and patterns. Here are key differences to consider:
+- Bitcoin RPC: `http://127.0.0.1:18443/wallet/testwallet`
+- Titan: `http://127.0.0.1:3030`
+- Arch RPC: `http://localhost:9002/`
+- Bitcoin network: `regtest`
 
-### Connection Management
-- **TypeScript**: Uses promise-based async patterns
-- **Rust**: Uses Tokio-based async runtime
+`Config::devnet()`, `Config::testnet()`, and `Config::mainnet()` are also available, but their endpoint fields are intentionally empty in the SDK and must be filled with the endpoints for your environment.
 
-### Error Handling
-- **TypeScript**: Try-catch with custom error types
-- **Rust**: Result<T, E> pattern with detailed error types
+## Supported Rust Client Methods
 
-### Data Serialization
-- **TypeScript**: JSON and Buffer-based serialization
-- **Rust**: Borsh and custom serialization
+The Rust SDK wraps the current validator RPC methods:
 
-## Getting Help
+- Raw calls: `call_method`, `call_method_with_params`, `call_method_raw`, `call_method_with_params_raw`
+- Accounts: `read_account_info`, `get_multiple_accounts`, `get_account_address`, `get_program_accounts`
+- Transactions: `send_transaction`, `send_transactions`, `get_processed_transaction`, `wait_for_processed_transaction`, `wait_for_processed_transactions`
+- Blocks: `get_block_count`, `get_block_hash`, `get_best_block_hash`, `get_best_finalized_block_hash`, `get_block_by_hash`, `get_full_block_by_hash`, `get_block_by_height`, `get_full_block_by_height`, `get_full_block_with_txids`
+- Faucet and conflict helpers: `request_airdrop`, `create_and_fund_account_with_faucet`, `check_pre_anchor_conflict`
+- Network: `get_network_pubkey`
 
-### TypeScript SDK Support
-- **Issues**: [TypeScript SDK GitHub Issues](https://github.com/Arch-Network/arch-typescript-sdk/issues)
-- **Documentation**: [TypeScript SDK Docs](typescript/getting-started.md)
-- **Examples**: [TypeScript Examples](https://github.com/Arch-Network/arch-typescript-sdk/tree/main/examples)
+## Program Deployment Helpers
 
-### Rust SDK Support
-- **Issues**: [Arch Network GitHub Issues](https://github.com/arch-network/arch-network/issues)
-- **Documentation**: [Rust SDK Docs](rust/getting-started.md)
-- **Examples**: [Rust Examples](https://github.com/arch-network/arch-network/examples)
+The Rust SDK includes program deployment helpers:
 
-### General Support
-- **Discord**: [Arch Network Discord](https://discord.gg/archnetwork)
-- **Forum**: [Arch Network Forum](https://forum.arch.network)
-- **Stack Overflow**: Tag with `arch-network`
+- `ProgramDeployer` for async code
+- `BlockingProgramDeployer` for synchronous code
+
+The CLI exposes deployment through `arch-cli deploy`.
+
+## TypeScript SDK
+
+Install the TypeScript SDK from npm:
+
+```bash
+npm install @arch-network/arch-sdk
+```
+
+The TypeScript SDK is maintained separately. For current TypeScript APIs, verify against [Arch-Network/arch-typescript-sdk](https://github.com/Arch-Network/arch-typescript-sdk).
+
+## Choosing an SDK
+
+Use the TypeScript SDK for web apps and Node.js services when your codebase is JavaScript or TypeScript. Use the Rust SDK for Rust services, tools, tests, and clients that need direct access to the Rust types used by the validator.
+
+For on-chain programs, depend on `arch_program` directly rather than treating `arch_sdk` as an on-chain framework.
 
 ## Next Steps
 
-Choose your SDK and get started:
-
-- **[Get Started with TypeScript SDK →](typescript/getting-started.md)**
-- **[Get Started with Rust SDK →](rust/getting-started.md)**
-
-For a general introduction to Arch Network concepts, visit our [Getting Started Guide](../quick-start/quick-start.mdx).
+- [TypeScript SDK Getting Started](./typescript/getting-started.md)
+- [RPC API Reference](/docs/tools-apis/api-reference)
+- [Arch CLI Reference](/docs/tools-apis/arch-cli-reference)
+- [Program Development](/docs/development/writing-your-first-program)

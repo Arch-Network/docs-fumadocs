@@ -75,8 +75,8 @@ async function main() {
     
   } catch (error) {
     console.error('❌ Error connecting to Arch node:', error);
-    console.log('\n💡 Make sure your Arch node is running at http://localhost:9002');
-    console.log('   You can start it with: arch-node --network=testnet');
+    console.log('\n💡 Make sure your local Arch validator is running at http://localhost:9002');
+    console.log('   You can start the local stack with: arch-cli orchestrate start');
   }
 }
 
@@ -525,8 +525,8 @@ completeExample().catch(console.error);
 
 ## Next Steps
 
-- Learn about [Arch's account model](../account.md)
-- Understand [message and instruction formats](../instructions-and-messages.md)
+- Learn about [Arch's account model](../../program/accounts.md)
+- Understand [message and instruction formats](../../program/instructions-and-messages.md)
 - Explore the [RPC API](../../reference/rpc/index.md) for all available methods
 - Check the [TypeScript SDK source](https://github.com/Arch-Network/arch-typescript-sdk) for implementation details
 

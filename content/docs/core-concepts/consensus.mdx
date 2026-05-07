@@ -32,7 +32,10 @@ The subsequent sections describe both the implemented features and the complete 
 ```rust
 // Core DKG message types for network coordination
 pub enum DKGMessage {
-    StartDKG { message: String },
+    StartDKG {
+        message: String,
+        participants: HashSet<NetworkPeerId>,
+    },
     Round1Package { package: round1::Package },
     Round2Package { package: round2::Package },
     DKGStatus(DKGStatusMessage),
@@ -43,8 +46,8 @@ pub enum DKGStatus {
     Pending(String),
     Ongoing(String),
     Failed(String, String),
-    Finished(String),
-    NetworkCompleted(String),
+    Finished(String, PublicKeyPackage),
+    NetworkCompleted(String, PublicKeyPackage),
 }
 ```
 
@@ -138,48 +141,34 @@ sequenceDiagram
     V2->>V2: Compute final key packages
     V3->>V3: Compute final key packages
     
-    V1->>V1: Save pubkey_package.json
-    V2->>V2: Save pubkey_package.json
-    V3->>V3: Save pubkey_package.json
+    V1->>V1: Save key_package.json
+    V2->>V2: Save key_package.json
+    V3->>V3: Save key_package.json
 ```
 
 Each validator:
 - Combines all Round2 packages
 - Computes the final `PublicKeyPackage`
-- Saves the `pubkey_package.json` file
+- Saves the `key_package.json` file
 - Transitions to `Ready` state
 
-### The `pubkey_package.json` File
+### The `key_package.json` File
 
 #### Location and Structure
-The `pubkey_package.json` file is automatically created in:
+The key package state is automatically created in:
 ```text
-{data_dir}/{network_mode}/pubkey_package.json
+{data_dir}/{network_mode}/key_manager/key_package.json
 ```
 
-For example: `./.arch_data/devnet/pubkey_package.json`
+For example: `./.arch_data/devnet/key_manager/key_package.json`
 
 #### File Format
-```json
-{
-  "verifying_key": {
-    "element": "02a0434d9e47f3c86235477c7b1ae6ae5d3442d49b1943c2b752a68e2a47e247c7"
-  },
-  "verifying_shares": {
-    "0000000000000000000000000000000000000000000000000000000000000001": {
-      "element": "02b8d9aa7c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0"
-    },
-    "0000000000000000000000000000000000000000000000000000000000000002": {
-      "element": "03c9eabb8d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1"
-    }
-  }
-}
-```
+The file stores the block number, the public key package, and an optional encrypted secret share.
 
 #### What Each Field Represents
-- **`verifying_key`**: The master public key for the entire validator set
-- **`verifying_shares`**: Individual public keys for each validator's share
-- **`element` fields**: secp256k1 curve points in compressed format
+- **`pubkey_package`**: The public key package for the validator set
+- **`secret_share`**: Optional encrypted FROST secret share for the validator
+- **`block_number`**: Block number associated with the saved package
 
 ### Key Security Properties
 
@@ -293,22 +282,7 @@ Arch's unique approach to state management leverages Bitcoin's UTXO model while 
 
 #### UTXO State Tracking
 
-```rust
-pub struct UtxoState {
-    pub meta: UtxoMeta,          // UTXO identification
-    pub status: UtxoStatus,      // Current UTXO status
-    pub owner: Pubkey,           // UTXO owner
-    pub created_at: i64,         // Creation timestamp
-    pub spent_at: Option<i64>,   // Spend timestamp if spent
-}
-
-pub enum UtxoStatus {
-    Pending,    // Waiting for confirmations
-    Active,     // Confirmed and spendable
-    Spent,      // UTXO has been consumed
-    Invalid,    // UTXO was invalidated (e.g., by reorg)
-}
-```
+At the program boundary, `UtxoMeta` is the compact `txid || vout` identifier used to reference a Bitcoin output. Confirmation and spendability checks are performed by runtime, transaction-pool, Titan, and Bitcoin integration components.
 
 #### State Transition Process
 1. **UTXO Validation**

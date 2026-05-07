@@ -17,8 +17,10 @@ The Token Program enables:
 ## Program ID
 
 ```text
-AplToken111111111111111111111111
+TokenT4em53UrV4gSvZ3nCS2mZeHaqTLapwt6iZt6Mk
 ```
+
+In Rust, use `apl_token::id()`.
 
 ## Account Types
 
@@ -45,6 +47,7 @@ Holds token balances for a specific mint:
 | `amount` | `u64` | Number of tokens held |
 | `delegate` | `COption<Pubkey>` | Optional delegate authority |
 | `state` | `AccountState` | Account state (Uninitialized/Initialized/Frozen) |
+| `is_native` | `COption<u64>` | Rent-exempt reserve for wrapped native accounts |
 | `delegated_amount` | `u64` | Amount delegated |
 | `close_authority` | `COption<Pubkey>` | Optional authority to close the account |
 
@@ -327,7 +330,7 @@ pub struct InitializeMultisig {
 
 **Required accounts:**
 - `[writable]` The multisig account
-- `[]` The rent sysvar
+- `[]` Signer public keys for the multisig
 
 **Example:**
 ```rust
@@ -346,166 +349,45 @@ let instruction = apl_token::instruction::initialize_multisig(
 
 | Code | Name | Description |
 |------|------|-------------|
-| 0 | `InvalidMint` | The mint provided is not valid |
-| 1 | `InvalidOwner` | The owner provided is not valid |
-| 2 | `InvalidAmount` | The amount provided is not valid |
-| 3 | `InvalidDelegate` | The delegate provided is not valid |
-| 4 | `InvalidAccount` | The account provided is not valid |
-| 5 | `InvalidState` | The account state is not valid |
-| 6 | `InvalidAuthority` | The authority provided is not valid |
-| 7 | `InvalidCloseAuthority` | The close authority provided is not valid |
-| 8 | `InvalidFreezeAuthority` | The freeze authority provided is not valid |
-| 9 | `InvalidMintAuthority` | The mint authority provided is not valid |
-| 10 | `InvalidSupply` | The supply provided is not valid |
-| 11 | `InvalidDecimals` | The decimals provided are not valid |
-| 12 | `InvalidInstruction` | The instruction provided is not valid |
-| 13 | `InvalidProgramId` | The program ID provided is not valid |
-| 14 | `InvalidAccountData` | The account data provided is not valid |
-| 15 | `InvalidAccountOwner` | The account owner provided is not valid |
-| 16 | `InvalidAccountDataLength` | The account data length is not valid |
-| 17 | `InvalidAccountDataFormat` | The account data format is not valid |
-| 18 | `InvalidAccountDataVersion` | The account data version is not valid |
-| 19 | `InvalidAccountDataDiscriminator` | The account data discriminator is not valid |
+| 0 | `NotRentExempt` | Lamport balance below rent-exempt threshold |
+| 1 | `InsufficientFunds` | Insufficient funds for the operation |
+| 2 | `InvalidMint` | The mint provided is not valid |
+| 3 | `MintMismatch` | Account is not associated with this mint |
+| 4 | `OwnerMismatch` | Owner does not match |
+| 5 | `FixedSupply` | This token's supply is fixed |
+| 6 | `AlreadyInUse` | Account cannot be initialized because it is already in use |
+| 7 | `InvalidNumberOfProvidedSigners` | Invalid number of provided signers |
+| 8 | `InvalidNumberOfRequiredSigners` | Invalid number of required signers |
+| 9 | `UninitializedState` | State is uninitialized |
+| 10 | `NativeNotSupported` | Instruction does not support native tokens |
+| 11 | `NonNativeHasBalance` | Non-native account can only be closed when balance is zero |
+| 12 | `InvalidInstruction` | Invalid instruction |
+| 13 | `InvalidState` | State is invalid for the requested operation |
+| 14 | `Overflow` | Operation overflowed |
+| 15 | `AuthorityTypeNotSupported` | Account does not support specified authority type |
+| 16 | `MintCannotFreeze` | This token mint cannot freeze accounts |
+| 17 | `AccountFrozen` | Account is frozen |
+| 18 | `MintDecimalsMismatch` | Mint decimals mismatch |
+| 19 | `NonNativeNotSupported` | Instruction does not support non-native tokens |
 
-## Usage Examples
+## Rust Usage
 
-### Creating a Token
+The package is published as `apl-token` and imported as the `apl_token` crate. Use explicit modules such as `apl_token::instruction`, `apl_token::state`, and `apl_token::id()`; the crate does not expose a `prelude` module.
 
-```rust
-use arch_sdk::prelude::*;
-use apl_token::prelude::*;
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Connect to Arch Network
-    let client = ArchNetworkClient::new("http://localhost:9002").await?;
-    
-    // Create keypairs
-    let mint_keypair = Keypair::new();
-    let mint_authority = Keypair::new();
-    let payer = Keypair::new();
-    
-    // Create mint account
-    let mint_account = client.create_account(
-        CreateAccountParams {
-            space: apl_token::state::Mint::LEN, // Mint account size
-            owner: apl_token::id(),
-            payer: &payer,
-        }
-    ).await?;
-    
-    // Initialize mint
-    let instruction = initialize_mint(
-        &apl_token::id(),
-        &mint_account.pubkey(),
-        &mint_authority.pubkey(),
-        None, // No freeze authority
-        9, // 9 decimals
-    )?;
-    
-    // Send transaction
-    let transaction = Transaction::new()
-        .add_instruction(instruction);
-    
-    let signature = client.send_transaction(transaction, &[&payer, &mint_authority]).await?;
-    println!("Mint created: {}", signature);
-    
-    Ok(())
-}
+```toml
+[dependencies]
+apl-token = "0.6.4"
 ```
 
-### Creating a Token Account
-
 ```rust
-async fn create_token_account(
-    client: &ArchNetworkClient,
-    mint: &Pubkey,
-    owner: &Pubkey,
-    payer: &Keypair,
-) -> Result<Pubkey, Box<dyn std::error::Error>> {
-    // Create account
-    let account = client.create_account(
-        CreateAccountParams {
-            space: apl_token::state::Account::LEN, // Token account size
-            owner: apl_token::id(),
-            payer,
-        }
-    ).await?;
-    
-    // Initialize account
-    let instruction = initialize_account(
-        &apl_token::id(),
-        &account.pubkey(),
-        mint,
-        owner,
-    )?;
-    
-    // Send transaction
-    let transaction = Transaction::new()
-        .add_instruction(instruction);
-    
-    client.send_transaction(transaction, &[payer]).await?;
-    
-    Ok(account.pubkey())
-}
-```
-
-### Minting Tokens
-
-```rust
-async fn mint_tokens(
-    client: &ArchNetworkClient,
-    mint: &Pubkey,
-    destination: &Pubkey,
-    amount: u64,
-    mint_authority: &Keypair,
-    payer: &Keypair,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let instruction = mint_to(
-        &apl_token::id(),
-        mint,
-        destination,
-        &mint_authority.pubkey(),
-        &[],
-        amount,
-    )?;
-    
-    let transaction = Transaction::new()
-        .add_instruction(instruction);
-    
-    client.send_transaction(transaction, &[mint_authority, payer]).await?;
-    
-    Ok(())
-}
-```
-
-### Transferring Tokens
-
-```rust
-async fn transfer_tokens(
-    client: &ArchNetworkClient,
-    source: &Pubkey,
-    destination: &Pubkey,
-    amount: u64,
-    owner: &Keypair,
-    payer: &Keypair,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let instruction = transfer(
-        &apl_token::id(),
-        source,
-        destination,
-        &owner.pubkey(),
-        &[],
-        amount,
-    )?;
-    
-    let transaction = Transaction::new()
-        .add_instruction(instruction);
-    
-    client.send_transaction(transaction, &[owner, payer]).await?;
-    
-    Ok(())
-}
+let transfer_ix = apl_token::instruction::transfer(
+    &apl_token::id(),
+    source_account,
+    destination_account,
+    owner,
+    &[],
+    amount,
+)?;
 ```
 
 ## CLI Usage
@@ -534,11 +416,11 @@ arch-cli token create-account \
 
 ```bash
 # Mint tokens to an account
-arch-cli token mint-to \
-  --mint <MINT_ADDRESS> \
-  --destination <TOKEN_ACCOUNT> \
-  --amount 1000000000 \
-  --mint-authority ~/mint_authority.key \
+arch-cli token mint \
+  <MINT_ADDRESS> \
+  1000000000 \
+  --account-address <TOKEN_ACCOUNT> \
+  --authority ~/mint_authority.key \
   --keypair-path ~/payer.key
 ```
 
@@ -547,9 +429,9 @@ arch-cli token mint-to \
 ```bash
 # Transfer tokens between accounts
 arch-cli token transfer \
-  --source <SOURCE_ACCOUNT> \
-  --destination <DESTINATION_ACCOUNT> \
-  --amount 500000000 \
+  <SOURCE_ACCOUNT> \
+  <DESTINATION_ACCOUNT> \
+  500000000 \
   --owner ~/owner.key \
   --keypair-path ~/payer.key
 ```
@@ -580,7 +462,7 @@ arch-cli token transfer \
 ## Next Steps
 
 <Cards>
-  <Card title="Associated Token Account" href="/docs/APL/associated-token-account">
+  <Card title="Associated Token Account" href="/docs/apl/associated-token-account">
     Learn about associated token accounts
   </Card>
   <Card title="Token Guide" href="/docs/development/how-to-create-a-fungible-token">

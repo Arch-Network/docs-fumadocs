@@ -619,20 +619,17 @@ mod tests {
 cargo build-sbf
 
 # Deploy to local network
-arch-cli program deploy target/deploy/lending_protocol.so
+arch-cli deploy target/deploy
 
-# Deploy to testnet
-arch-cli program deploy target/deploy/lending_protocol.so --url testnet
+# Deploy to testnet by selecting a testnet profile
+arch-cli --profile testnet deploy target/deploy
 ```
 
 ### Initialize Pool
 
 ```bash
 # Initialize a Bitcoin lending pool
-arch-cli program call <PROGRAM_ID> \
-  --accounts ~/pool_account.key,~/authority.key \
-  --instruction-data $(echo '{"InitializePool":{"pool_id":1,"asset_type":"Bitcoin","collateral_factor":8000,"liquidation_threshold":8500,"price_oracle":"<ORACLE_ADDRESS>"}}' | base64) \
-  --keypair-path ~/authority.key
+# Submit a RuntimeTransaction with the InitializePool instruction using the SDK or RPC API.
 ```
 
 ## Security Considerations
@@ -683,7 +680,7 @@ arch-cli program call <PROGRAM_ID> \
   <Card title="Runes Swap Guide" href="/docs/defi-applications/how-to-build-runes-swap">
     Build a token swap protocol
   </Card>
-  <Card title="APL Token Program" href="/docs/APL/token-program">
+  <Card title="APL Token Program" href="/docs/apl/token-program">
     Use APL tokens in your lending protocol
   </Card>
   <Card title="Arch Examples" href="https://github.com/Arch-Network/arch-examples" external>
