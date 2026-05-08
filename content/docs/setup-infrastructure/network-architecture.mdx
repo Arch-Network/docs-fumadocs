@@ -371,7 +371,8 @@ arch-cli orchestrate start
 
 # Services:
 # - Bitcoin Core: http://127.0.0.1:18443
-# - Titan API: http://127.0.0.1:3030
+# - Titan HTTP API: http://127.0.0.1:8080
+# - Titan TCP/subscription endpoint: 127.0.0.1:3030
 # - Validator RPC: http://127.0.0.1:9002
 ```
 
@@ -422,7 +423,7 @@ curl -X POST http://localhost:9002 \
 bitcoin-cli -regtest getblockchaininfo
 
 # Check Titan status
-curl http://localhost:3030
+curl http://localhost:8080
 ```
 
 ### Metrics

@@ -60,6 +60,8 @@ Choose one of the following network modes:
 arch-cli orchestrate start
 ```
 
+The published local validator image is a Linux `amd64` image. On Apple Silicon Macs, run it through Docker's `linux/amd64` emulation; `arch-cli orchestrate start` uses the Docker Compose configuration that pins this platform.
+
 This starts a complete local development environment with:
 - Bitcoin Core (regtest mode)
 - Titan indexer
@@ -68,7 +70,7 @@ This starts a complete local development environment with:
 **Advanced Options:**
 
 ```bash
-# Use local source code for development
+# Use local source code for development, or when the published image is stale/incompatible
 arch-cli orchestrate start --local "$(pwd)"
 
 # Skip bitcoind and use remote Bitcoin RPC

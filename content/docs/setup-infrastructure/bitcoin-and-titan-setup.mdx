@@ -92,9 +92,12 @@ This automatically starts:
 - Local validator
 - All necessary networking and configuration
 
+The published local validator container is a Linux `amd64` image. On Apple Silicon Macs, Docker must run it through `linux/amd64` emulation; the `arch-cli orchestrate start` compose configuration pins this platform automatically.
+
 **Service URLs:**
 - Bitcoin Core RPC: `http://127.0.0.1:18443`
-- Titan API: `http://127.0.0.1:3030`
+- Titan HTTP API: `http://127.0.0.1:8080`
+- Titan TCP/subscription endpoint: `127.0.0.1:3030`
 - Validator RPC: `http://127.0.0.1:9002`
 
 **Management Commands:**
@@ -110,6 +113,12 @@ arch-cli orchestrate validator-status
 
 # Reset everything (clears all data)
 arch-cli orchestrate reset
+```
+
+If the published local validator image is stale or fails at startup, run the local stack from a source checkout:
+
+```bash
+arch-cli orchestrate start --local /path/to/arch-network
 ```
 
 ### Option B: Manual Setup
@@ -220,8 +229,8 @@ cargo run --release -p validator -- \
   --data-dir ~/.arch_data \
   --rpc-bind-port 9001 \
   --p2p-bind-port 29001 \
-  --titan-endpoint http://127.0.0.1:3030 \
-  --titan-socket-endpoint 127.0.0.1:8080
+  --titan-endpoint http://127.0.0.1:8080 \
+  --titan-socket-endpoint 127.0.0.1:3030
 ```
 
 ## 🔧 Configuration Options
@@ -289,7 +298,7 @@ bitcoin-cli -regtest getbalance
 ### Verify Titan Indexer
 ```bash
 # Check Titan HTTP API
-curl http://127.0.0.1:3030
+curl http://127.0.0.1:8080
 
 # Get block information
 curl http://127.0.0.1:8080/api/v1/blocks/latest

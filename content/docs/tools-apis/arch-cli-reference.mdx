@@ -305,6 +305,8 @@ arch-cli orchestrate start \
     [--no-bitcoind]
 ```
 
+By default, this uses the published `ghcr.io/arch-network/local_validator:latest` Linux `amd64` image and publishes the local validator RPC API on `http://localhost:9002`. On Apple Silicon Macs, Docker must run the image as `linux/amd64`; the bundled compose file pins that platform. Use `--local <ARCH_NETWORK_SOURCE_DIR>` when you need to build the local validator from a source checkout instead of using the published image.
+
 ### Service Lifecycle
 
 - `arch-cli orchestrate stop`

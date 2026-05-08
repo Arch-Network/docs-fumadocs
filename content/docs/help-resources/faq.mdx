@@ -116,6 +116,8 @@ Common compilation issues:
 Common startup issues:
 - **Docker**: Ensure Docker is running and accessible
 - **Ports**: Check that required ports (9002, 18443, 8080) are available
+- **Image platform**: The published local validator image is Linux `amd64`; on Apple Silicon Macs, make sure Docker is running it as `linux/amd64`
+- **Stale image**: If the published image fails or lags behind the source branch you need, run `arch-cli orchestrate start --local /path/to/arch-network`
 - **Dependencies**: Verify Bitcoin Core and Titan are properly configured
 - **Permissions**: Check file permissions for data directories
 
