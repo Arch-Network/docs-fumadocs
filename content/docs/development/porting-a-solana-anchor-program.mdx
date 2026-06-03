@@ -5,6 +5,19 @@ description: "A practical, start-to-finish guide for porting an existing Solana 
 
 A practical, start-to-finish porting guide for developers who already have a Solana Anchor program and want to bring it to **Arch Network**. We use the real-world **Squads V4** multisig as our worked example — a non-trivial, production-grade Anchor program — and document every wall we hit and how we got over it.
 
+**Who this is for:** you have a working Solana Anchor program and want it running on Arch. You're comfortable with Rust, Anchor, and the SBF build flow — you do **not** need prior Arch experience.
+
+The whole port is six stages. The diagram below doubles as a map of this guide — each box notes the section that covers it:
+
+```mermaid
+flowchart LR
+    A["Convert<br/>a2s · §4"] --> B["API rewrite<br/>§5"]
+    B --> C["Build SBF<br/>§7"]
+    C --> D["Deploy<br/>§8"]
+    D --> E["Publish IDL<br/>§9"]
+    E --> F["Verify decode<br/>§10"]
+```
+
 ## 1. TL;DR — what you'll achieve
 
 We took **Squads V4** (Squads Protocol's audited Solana multisig, licensed **AGPL-3.0**) and ported it to **Arch Network**, deployed it to Arch testnet, published its IDL so the Arch Explorer decodes instructions by name, and proved it end-to-end with two successful, decoded on-chain transactions. We also built a Bitcoin-wallet-connected web UI on top of it.
@@ -33,6 +46,26 @@ By the end of this guide you will be able to:
 ## 2. Mental model: Arch vs Solana
 
 Arch Network is, from a program author's perspective, *remarkably close* to Solana. It keeps the **account model**, **lamports**, **cross-program invocation (CPI)**, and **BPF/SBF** execution. The differences are concentrated in identity/signing, program-ID encoding, sysvar access, and the fact that Arch is **Bitcoin-anchored**.
+
+At a glance, most of the runtime carries over untouched; the work is concentrated in a short list of changes:
+
+```mermaid
+flowchart TB
+    subgraph SAME["Carries over unchanged"]
+        S1["Account model"]
+        S2["Lamports & rent"]
+        S3["CPI: invoke / invoke_signed"]
+        S4["BPF/SBF execution"]
+    end
+    subgraph CHANGE["What you must change"]
+        C1["Framework crates<br/>anchor → satellite"]
+        C2["Identity<br/>hex IDs, secp256k1"]
+        C3["Sysvars → helpers"]
+        C4["Token program → APL"]
+        C5["Remove custom allocator"]
+        C6["Reject Address Lookup Tables"]
+    end
+```
 
 | Concept | Solana | Arch |
 |---|---|---|
@@ -278,7 +311,26 @@ If `show` reports the account as **executable**, you're deployed.
 
 ## 9. Publishing the IDL (so the Explorer decodes your instructions)
 
-**This is a separate step from deploying bytecode.**
+**This is a separate step from deploying bytecode.** You write the IDL into a derived account by driving the program's own `__idl_dispatch` handlers; the indexer later fetches it and decodes instructions on read:
+
+```mermaid
+sequenceDiagram
+    participant Dev as Developer
+    participant Prog as Deployed program<br/>(__idl_dispatch)
+    participant Acct as IDL account<br/>(derived PDA+seed)
+    participant Idx as Arch indexer
+
+    Note over Dev: anchor idl build → normalize metadata.spec = "0.1.0" → zlib(JSON)
+    Dev->>Prog: Create (tag 0x00, u64 len)
+    Prog->>Acct: allocate + set authority
+    loop chunked payload
+        Dev->>Prog: Write (tag 0x02, chunk)
+        Prog->>Acct: append zlib(JSON)
+    end
+    Note over Idx: on read
+    Idx->>Acct: fetch + zlib-inflate + cache
+    Idx-->>Dev: decode_with_idl → named instruction + args + labeled accounts
+```
 
 ### 9.1 Why you can't just use Satellite's `anchor idl ...`
 
