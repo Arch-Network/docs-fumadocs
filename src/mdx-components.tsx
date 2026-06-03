@@ -1,5 +1,6 @@
 import defaultMdxComponents from 'fumadocs-ui/mdx';
 import type { MDXComponents } from 'mdx/types';
+import { Pipeline, Compare } from '@/components/diagrams';
 
 // Custom Tip component without icon and border
 function Tip({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,8 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ...defaultMdxComponents,
     Tip,
     Warning,
+    Pipeline,
+    Compare,
     ...components,
   } as MDXComponents;
 }

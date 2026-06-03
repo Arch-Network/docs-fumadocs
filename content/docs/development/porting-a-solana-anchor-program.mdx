@@ -7,16 +7,18 @@ A practical, start-to-finish porting guide for developers who already have a Sol
 
 **Who this is for:** you have a working Solana Anchor program and want it running on Arch. You're comfortable with Rust, Anchor, and the SBF build flow — you do **not** need prior Arch experience.
 
-The whole port is six stages. The diagram below doubles as a map of this guide — each box notes the section that covers it:
+The whole port is six stages. The map below doubles as a guide to this page — each box notes the section that covers it:
 
-```mermaid
-flowchart LR
-    A["Convert<br/>a2s · §4"] --> B["API rewrite<br/>§5"]
-    B --> C["Build SBF<br/>§7"]
-    C --> D["Deploy<br/>§8"]
-    D --> E["Publish IDL<br/>§9"]
-    E --> F["Verify decode<br/>§10"]
-```
+<Pipeline
+  steps={[
+    { label: "Convert", sub: "a2s", ref: "§4" },
+    { label: "API rewrite", ref: "§5" },
+    { label: "Build SBF", ref: "§7" },
+    { label: "Deploy", ref: "§8" },
+    { label: "Publish IDL", ref: "§9" },
+    { label: "Verify decode", ref: "§10" },
+  ]}
+/>
 
 ## 1. TL;DR — what you'll achieve
 
@@ -49,23 +51,28 @@ Arch Network is, from a program author's perspective, *remarkably close* to Sola
 
 At a glance, most of the runtime carries over untouched; the work is concentrated in a short list of changes:
 
-```mermaid
-flowchart TB
-    subgraph SAME["Carries over unchanged"]
-        S1["Account model"]
-        S2["Lamports & rent"]
-        S3["CPI: invoke / invoke_signed"]
-        S4["BPF/SBF execution"]
-    end
-    subgraph CHANGE["What you must change"]
-        C1["Framework crates<br/>anchor → satellite"]
-        C2["Identity<br/>hex IDs, secp256k1"]
-        C3["Sysvars → helpers"]
-        C4["Token program → APL"]
-        C5["Remove custom allocator"]
-        C6["Reject Address Lookup Tables"]
-    end
-```
+<Compare
+  keep={{
+    title: "Carries over unchanged",
+    items: [
+      "Account model",
+      "Lamports & rent",
+      <>CPI: <code>invoke</code> / <code>invoke_signed</code></>,
+      "BPF/SBF execution",
+    ],
+  }}
+  change={{
+    title: "What you must change",
+    items: [
+      <>Framework crates: <code>anchor</code> → <code>satellite</code></>,
+      "Identity: hex IDs, secp256k1",
+      "Sysvars → helpers",
+      <>Token program → <code>apl-token</code></>,
+      "Remove custom allocator",
+      "Reject Address Lookup Tables",
+    ],
+  }}
+/>
 
 | Concept | Solana | Arch |
 |---|---|---|
@@ -314,6 +321,7 @@ If `show` reports the account as **executable**, you're deployed.
 **This is a separate step from deploying bytecode.** You write the IDL into a derived account by driving the program's own `__idl_dispatch` handlers; the indexer later fetches it and decodes instructions on read:
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Geist, sans-serif","primaryColor":"#efe9cf","primaryBorderColor":"#e0922e","primaryTextColor":"#181818","actorBkg":"#efe9cf","actorBorder":"#e0922e","actorTextColor":"#181818","actorLineColor":"#c98a3a","signalColor":"#9a5a2c","signalTextColor":"#5a3a1c","labelBoxBkgColor":"#f6d79a","labelBoxBorderColor":"#e0922e","labelTextColor":"#181818","loopTextColor":"#5a3a1c","noteBkgColor":"#f6d79a","noteBorderColor":"#e0922e","noteTextColor":"#181818","activationBkgColor":"#f3c873","activationBorderColor":"#e0922e","sequenceNumberColor":"#ffffff"}}}%%
 sequenceDiagram
     participant Dev as Developer
     participant Prog as Deployed program<br/>(__idl_dispatch)
