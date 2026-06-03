@@ -36,7 +36,8 @@
       "pages": [
         "development/writing-your-first-program",
         "development/how-to-create-a-fungible-token",
-        "development/how-to-write-oracle-program"
+        "development/how-to-write-oracle-program",
+        "development/porting-a-solana-anchor-program"
       ]
     },
     {
