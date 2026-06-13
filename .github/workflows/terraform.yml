@@ -48,7 +48,7 @@ jobs:
 
       - name: Comment PR - Format Issues
         if: steps.fmt.outcome == 'failure' && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             github.rest.issues.createComment({
@@ -60,7 +60,7 @@ jobs:
 
       - name: Comment PR - Validation Success
         if: steps.validate.outcome == 'success' && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             github.rest.issues.createComment({
@@ -112,7 +112,7 @@ jobs:
           TF_VAR_github_repository: ${{ github.server_url }}/${{ github.repository }}
 
       - name: Comment PR with Plan
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const output = `#### Terraform Plan 📋
@@ -186,7 +186,7 @@ jobs:
         working-directory: ./terraform
 
       - name: Comment on Commit
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             github.rest.repos.createCommitComment({
