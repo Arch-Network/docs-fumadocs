@@ -59,6 +59,15 @@
       ]
     },
     {
+      "title": "Products",
+      "pages": [
+        "products/overview",
+        "products/arch-prime",
+        "products/how-it-works",
+        "products/why-a-purpose-built-chain"
+      ]
+    },
+    {
       "title": "APL (Arch Program Library)",
       "pages": [
         "apl/introduction",
