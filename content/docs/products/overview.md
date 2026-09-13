@@ -3,14 +3,15 @@ title: Product Suite Overview
 description: Bitcoin-native products for trading, lending, prime services, and yield.
 ---
 
-Arch Network provides the foundation for Bitcoin capital markets: native Bitcoin settlement, programmable risk management, and products that work together as one system.
+Arch Prime is a Bitcoin-native prime brokerage built on Arch Network, the chain that controls Bitcoin collateral and settles to Bitcoin.
 
-## The Product Suite
+## Start here
 
-* **[Arch Prime](./arch-prime)** — On-chain prime services against native Bitcoin collateral
-* **[How Arch Prime Works](./how-it-works)** — Collateral, borrowing, deployment, and closeout
-* **[Why a Purpose-Built Chain](./why-a-purpose-built-chain)** — Why the architecture matters for clearing
+* **[What Arch Prime is](./prime/01-introduction/1.1-what-arch-prime-is)** — What Prime does with your Bitcoin
+* **[How the account works](./prime/02-how-it-works/2.1-the-margin-account)** — The account, collateral, buying power, and liquidation
+* **[Why a purpose-built chain](./prime/01-introduction/1.5-why-a-purpose-built-chain)** — Why clearing risk needs infrastructure designed for it
+* **[Glossary](./prime/08-reference/8.2-glossary)** — Canonical terms used across the Prime documentation
 
-## How They Connect
+## The documentation set
 
-Arch Prime is an on-chain prime account that borrows, deploys, and manages the whole position as a single margined book against native Bitcoin. Its mechanics and rationale are covered in the pages above.
+The full set covers the Prime account, assets, risks, business model, asset-manager integration, builder integration, and reference material. It is an internal draft with explicit open-item flags where product, risk, legal, or implementation decisions remain unresolved.
